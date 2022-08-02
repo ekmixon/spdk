@@ -25,7 +25,10 @@ class TraceProcess:
         return probes
 
     def fixup(self, script):
-        pregs = [re.compile(r'({}):__EXE__:(\w+)'.format(ptype)) for ptype in ['usdt', 'uprobe']]
+        pregs = [
+            re.compile(f'({ptype}):__EXE__:(\w+)') for ptype in ['usdt', 'uprobe']
+        ]
+
         with open(script, 'r') as file:
             lines = file.readlines()
         result = ''

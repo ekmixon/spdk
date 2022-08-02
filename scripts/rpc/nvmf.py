@@ -13,9 +13,8 @@ def nvmf_set_max_subsystems(client,
     Returns:
         True or False
     """
-    params = {}
+    params = {'max_subsystems': max_subsystems}
 
-    params['max_subsystems'] = max_subsystems
     return client.call('nvmf_set_max_subsystems', params)
 
 
@@ -40,8 +39,7 @@ def nvmf_set_config(client,
     if conn_sched:
         print("WARNING: conn_sched is deprecated and ignored.")
     if passthru_identify_ctrlr:
-        admin_cmd_passthru = {}
-        admin_cmd_passthru['identify_ctrlr'] = passthru_identify_ctrlr
+        admin_cmd_passthru = {'identify_ctrlr': passthru_identify_ctrlr}
         params['admin_cmd_passthru'] = admin_cmd_passthru
     if poll_groups_mask:
         params['poll_groups_mask'] = poll_groups_mask
@@ -66,11 +64,13 @@ def nvmf_create_target(client,
     Returns:
         The name of the new target.
     """
-    params = {}
+    params = {
+        'name': name,
+        'max_subsystems': max_subsystems,
+        'discovery_filter': discovery_filter,
+    }
 
-    params['name'] = name
-    params['max_subsystems'] = max_subsystems
-    params['discovery_filter'] = discovery_filter
+
     return client.call("nvmf_create_target", params)
 
 
@@ -84,9 +84,8 @@ def nvmf_delete_target(client,
     Returns:
         True on success or False
     """
-    params = {}
+    params = {'name': name}
 
-    params['name'] = name
     return client.call("nvmf_delete_target", params)
 
 
@@ -475,7 +474,7 @@ def nvmf_subsystem_allow_any_host(client, nqn, disable, tgt_name=None):
     Returns:
         True or False
     """
-    params = {'nqn': nqn, 'allow_any_host': False if disable else True}
+    params = {'nqn': nqn, 'allow_any_host': not disable}
 
     if tgt_name:
         params['tgt_name'] = tgt_name
@@ -566,12 +565,13 @@ def nvmf_get_stats(client, tgt_name=None):
         Current NVMf statistics.
     """
 
-    params = {}
-
-    if tgt_name:
-        params = {
+    params = (
+        {
             'tgt_name': tgt_name,
         }
+        if tgt_name
+        else {}
+    )
 
     return client.call('nvmf_get_stats', params)
 

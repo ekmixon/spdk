@@ -33,7 +33,7 @@ class SpdkArr(object):
         self.element_type = element_type
 
     def __iter__(self):
-        for i in range(0, self.num_elements):
+        for i in range(self.num_elements):
             curr = (self.arr_pointer + i).dereference()
             if (curr == 0x0):
                 continue
@@ -71,7 +71,7 @@ class SpdkObject(object):
         return self.obj['name']
 
     def __str__(self):
-        s = "SPDK object of type %s at %s" % (self.type_name, str(self.obj))
+        s = f"SPDK object of type {self.type_name} at {str(self.obj)}"
         s += '\n((%s*) %s)' % (self.type_name, str(self.obj))
         s += '\nname %s' % self.get_name()
         return s
@@ -122,10 +122,12 @@ class spdk_find_bdev(spdk_print_bdevs):
 
     def invoke(self, arg, from_tty):
         print(arg)
-        bdev_query = [bdev for bdev in self.element_list
-                      if str(bdev.get_name()).find(arg) != -1]
-        if bdev_query == []:
-            print("Cannot find bdev with name %s" % arg)
+        bdev_query = [
+            bdev for bdev in self.element_list if arg in str(bdev.get_name())
+        ]
+
+        if not bdev_query:
+            print(f"Cannot find bdev with name {arg}")
             return
 
         self.print_element_list(bdev_query)
@@ -149,7 +151,7 @@ class NvmfSubsystem(SpdkObject):
     def get_ns_list(self):
         max_nsid = int(self.obj['max_nsid'])
         ns_list = []
-        for i in range(0, max_nsid):
+        for i in range(max_nsid):
             nsptr = (self.obj['ns'] + i).dereference()
             if nsptr == 0x0:
                 continue

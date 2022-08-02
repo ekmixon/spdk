@@ -25,9 +25,7 @@ def get_addr_type(addr):
         return socket.AF_INET6
     except Exception as e:
         pass
-    if os.path.exists(addr):
-        return socket.AF_UNIX
-    return None
+    return socket.AF_UNIX if os.path.exists(addr) else None
 
 
 class JSONRPCException(Exception):
@@ -41,7 +39,7 @@ class JSONRPCClient(object):
         ch = logging.StreamHandler()
         ch.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
         ch.setLevel(logging.DEBUG)
-        self._logger = logging.getLogger("JSONRPCClient(%s)" % addr)
+        self._logger = logging.getLogger(f"JSONRPCClient({addr})")
         self._logger.addHandler(ch)
         self.log_set_level(kwargs.get('log_level', logging.ERROR))
         connect_retries = kwargs.get('conn_retries', 0)
@@ -51,7 +49,7 @@ class JSONRPCClient(object):
         self._recv_buf = ""
         self._reqs = []
 
-        for i in range(connect_retries):
+        for _ in range(connect_retries):
             try:
                 self._connect(addr, port)
                 return
@@ -183,12 +181,11 @@ class JSONRPCClient(object):
             response = self.recv()
         except JSONRPCException as e:
             """ Don't expect response to kill """
-            if not self.sock and method == "spdk_kill_instance":
-                self._logger.info("Connection terminated but ignoring since method is '%s'" % method)
-                return {}
-            else:
+            if self.sock or method != "spdk_kill_instance":
                 raise e
 
+            self._logger.info("Connection terminated but ignoring since method is '%s'" % method)
+            return {}
         if 'error' in response:
             params["method"] = method
             params["req_id"] = req_id

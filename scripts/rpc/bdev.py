@@ -198,9 +198,7 @@ def bdev_ocf_get_bdevs(client, name=None):
     Returns:
         Array of OCF devices with their current status
     """
-    params = None
-    if name:
-        params = {'name': name}
+    params = {'name': name} if name else None
     return client.call('bdev_ocf_get_bdevs', params)
 
 
@@ -1230,9 +1228,7 @@ def bdev_set_qd_sampling_period(client, name, period):
         period: period (in microseconds) at which to update the queue depth reading. If set to 0, polling will be disabled.
     """
 
-    params = {}
-    params['name'] = name
-    params['period'] = period
+    params = {'name': name, 'period': period}
     return client.call('bdev_set_qd_sampling_period', params)
 
 
@@ -1253,8 +1249,7 @@ def bdev_set_qos_limit(
         r_mbytes_per_sec: Read megabytes per second limit (>=10, example: 100). 0 means unlimited.
         w_mbytes_per_sec: Write megabytes per second limit (>=10, example: 100). 0 means unlimited.
     """
-    params = {}
-    params['name'] = name
+    params = {'name': name}
     if rw_ios_per_sec is not None:
         params['rw_ios_per_sec'] = rw_ios_per_sec
     if rw_mbytes_per_sec is not None:
@@ -1295,6 +1290,5 @@ def bdev_nvme_get_controller_health_info(client, name):
     Returns:
         Health log for the requested NVMe bdev controller.
     """
-    params = {}
-    params['name'] = name
+    params = {'name': name}
     return client.call('bdev_nvme_get_controller_health_info', params)

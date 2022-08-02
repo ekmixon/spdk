@@ -13,7 +13,7 @@ threads = set()
 ThreadModule = namedtuple('ThreadModule', ['thread', 'module'])
 FunctionModule = namedtuple('FunctionModule', ['function', 'module'])
 
-with open(sys.argv[1] + "/" + sys.argv[2] + ".perf.txt") as f:
+with open(f"{sys.argv[1]}/{sys.argv[2]}.perf.txt") as f:
     for line in f:
         fields = line.split()
         total_samples += int(fields[1])
@@ -56,7 +56,7 @@ for key, value in sorted(list(module_samples.items()), key=operator.itemgetter(1
     print("{:8.4f}      {:s}".format(float(value) * 100 / total_samples, key))
 
 print("")
-with open(sys.argv[1] + "/" + sys.argv[2] + "_db_bench.txt") as f:
+with open(f"{sys.argv[1]}/{sys.argv[2]}_db_bench.txt") as f:
     for line in f:
         if "maxresident" in line:
             fields = line.split()

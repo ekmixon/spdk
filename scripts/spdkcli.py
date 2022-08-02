@@ -9,7 +9,7 @@ from spdkcli import UIRoot
 
 
 def add_quotes_to_shell(spdk_shell):
-    command = shell.locatedExpr(Word(alphanums + '_'))('command')
+    command = shell.locatedExpr(Word(f'{alphanums}_'))('command')
     value = dblQuotedString.addParseAction(removeQuotes)
     value_word = Word(alphanums + r';,=_\+/.<>()~@:-%[]')
     keyword = Word(alphanums + r'_\-')
@@ -48,7 +48,7 @@ def main():
     try:
         client = JSONRPCClient(args.server_addr, port=args.port)
     except JSONRPCException as e:
-        spdk_shell.log.error("%s. SPDK not running?" % e)
+        spdk_shell.log.error(f"{e}. SPDK not running?")
         sys.exit(1)
 
     with client:
@@ -75,9 +75,9 @@ def main():
             try:
                 spdk_shell.run_interactive()
             except (JSONRPCException, ExecutionError) as e:
-                spdk_shell.log.error("%s" % e)
+                spdk_shell.log.error(f"{e}")
             except BrokenPipeError as e:
-                spdk_shell.log.error("Lost connection with SPDK: %s" % e)
+                spdk_shell.log.error(f"Lost connection with SPDK: {e}")
 
 
 if __name__ == "__main__":

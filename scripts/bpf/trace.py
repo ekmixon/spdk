@@ -391,7 +391,7 @@ class NativeProvider(TraceProvider):
 
             if tpoint.object_type != OBJECT_NONE:
                 if pe.object_index != TRACE_INVALID_OBJECT:
-                    object_id = '{}{}'.format(self._objects[tpoint.object_type], pe.object_index)
+                    object_id = f'{self._objects[tpoint.object_type]}{pe.object_index}'
                     ts = entry.tsc - pe.object_start
                 else:
                     object_id, ts = 'n/a', None
@@ -406,7 +406,7 @@ class NativeProvider(TraceProvider):
                 poller_id = None
 
             if pe.related_type != OBJECT_NONE:
-                related = '{}{}'.format(self._objects[pe.related_type], pe.related_index)
+                related = f'{self._objects[pe.related_type]}{pe.related_index}'
             else:
                 related = None
 
@@ -433,7 +433,7 @@ class Trace:
             current = obj.annotate(entry)
             if current is None:
                 continue
-            annotations.update(current)
+            annotations |= current
         return annotations
 
     def _format_args(self, entry):
@@ -442,7 +442,7 @@ class Trace:
         for arg, (name, value) in zip(entry.tpoint.args, entry.args.items()):
             annot = annotations.get(name)
             if annot is not None:
-                args.append('{}({})'.format(name, ', '.join(f'{n}={v}' for n, v in annot.items())))
+                args.append(f"{name}({', '.join((f'{n}={v}' for n, v in annot.items()))})")
             else:
                 args.append('{}: {}'.format(name, self._argfmt.get(arg.argtype,
                                                                    lambda a: a)(value)))
@@ -461,7 +461,7 @@ class Trace:
             timestamp = get_us(e.tsc, offset)
             diff = get_us(e.time, 0) if e.time is not None else None
             args = ', '.join(self._format_args(e))
-            related = ' (' + e.related + ')' if e.related is not None else ''
+            related = f' ({e.related})' if e.related is not None else ''
 
             print(('{:3} {:16.3f} {:3} {:24} {:12}'.format(
                 e.lcore, timestamp, e.poller if e.poller is not None else '',
@@ -499,9 +499,7 @@ class SPDKObject:
         various object properties.  For instance, {"qpair": {"qid": 1, "subnqn": "nqn"}} could be
         returned to annotate an argument called "qpair" with two items: "qid" and "subnqn".
         """
-        if entry.tpoint.id not in self.tpoints:
-            return None
-        return self._annotate(entry)
+        return None if entry.tpoint.id not in self.tpoints else self._annotate(entry)
 
 
 class QPair(SPDKObject):
@@ -561,10 +559,14 @@ class QPair(SPDKObject):
         qpair = entry.args.get('qpair')
         if qpair is None:
             return None
-        for obj in self._objects:
-            if obj.ptr == qpair and obj.begin <= entry.tsc <= obj.end:
-                return {'qpair': obj.properties}
-        return None
+        return next(
+            (
+                {'qpair': obj.properties}
+                for obj in self._objects
+                if obj.ptr == qpair and obj.begin <= entry.tsc <= obj.end
+            ),
+            None,
+        )
 
 
 def build_dtrace(file=None):

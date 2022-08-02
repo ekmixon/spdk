@@ -8,7 +8,7 @@ from subprocess import check_output, CalledProcessError, Popen
 def get_used_numa_nodes():
     used_numa_nodes = set()
     for bdf in get_nvme_devices_bdf():
-        with open("/sys/bus/pci/devices/%s/numa_node" % bdf, "r") as numa_file:
+        with open(f"/sys/bus/pci/devices/{bdf}/numa_node", "r") as numa_file:
             output = numa_file.read()
         used_numa_nodes.add(int(output))
     return used_numa_nodes
@@ -39,4 +39,6 @@ def get_nvme_devices():
 
 
 def nvmet_command(nvmet_bin, command):
-    return check_output("%s %s" % (nvmet_bin, command), shell=True).decode(encoding="utf-8")
+    return check_output(f"{nvmet_bin} {command}", shell=True).decode(
+        encoding="utf-8"
+    )

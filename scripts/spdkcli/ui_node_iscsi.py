@@ -29,7 +29,7 @@ class UIISCSIGlobalParams(UINode):
         if not iscsi_global_params:
             return
         for param, val in iscsi_global_params.items():
-            UIISCSIGlobalParam("%s: %s" % (param, val), self)
+            UIISCSIGlobalParam(f"{param}: {val}", self)
 
     def ui_command_set_auth(self, g=None, d=None, r=None, m=None):
         """Set CHAP authentication for discovery service.
@@ -57,7 +57,7 @@ class UIISCSIGlobalParam(UINode):
 class UIISCSIDevices(UINode):
     def __init__(self, parent):
         UINode.__init__(self, "target_nodes", parent)
-        self.scsi_devices = list()
+        self.scsi_devices = []
         self.refresh()
 
     def refresh(self):
@@ -93,8 +93,8 @@ class UIISCSIDevices(UINode):
            t = data_digest: Data Digest should be required for this target node
         """
         luns = []
-        print("bdev_name_id_pairs: %s" % bdev_name_id_pairs)
-        print("pg_ig_mappings: %s" % pg_ig_mappings)
+        print(f"bdev_name_id_pairs: {bdev_name_id_pairs}")
+        print(f"pg_ig_mappings: {pg_ig_mappings}")
         for u in bdev_name_id_pairs.strip().split(" "):
             bdev_name, lun_id = u.split(":")
             luns.append({"bdev_name": bdev_name, "lun_id": int(lun_id)})
@@ -222,8 +222,7 @@ class UIISCSIDevice(UINode):
         UIISCSIAuth(auths, self)
 
     def summary(self):
-        return "Id: %s, QueueDepth: %s" % (self.device.id,
-                                           self.target['queue_depth']), None
+        return f"Id: {self.device.id}, QueueDepth: {self.target['queue_depth']}", None
 
 
 class UIISCSIAuth(UINode):
@@ -233,9 +232,10 @@ class UIISCSIAuth(UINode):
         self.refresh()
 
     def summary(self):
-        return "disable_chap: %s, require_chap: %s, mutual_chap: %s, chap_group: %s" % (
-            self.auths['disable_chap'], self.auths['require_chap'],
-            self.auths['mutual_chap'], self.auths['chap_group']), None
+        return (
+            f"disable_chap: {self.auths['disable_chap']}, require_chap: {self.auths['require_chap']}, mutual_chap: {self.auths['mutual_chap']}, chap_group: {self.auths['chap_group']}",
+            None,
+        )
 
 
 class UIISCSILuns(UINode):
@@ -255,12 +255,12 @@ class UIISCSILuns(UINode):
 
 class UIISCSILun(UINode):
     def __init__(self, lun, parent):
-        UINode.__init__(self, "lun %s" % lun['lun_id'], parent)
+        UINode.__init__(self, f"lun {lun['lun_id']}", parent)
         self.lun = lun
         self.refresh()
 
     def summary(self):
-        return "%s" % self.lun['bdev_name'], None
+        return f"{self.lun['bdev_name']}", None
 
 
 class UIISCSIPgIgMaps(UINode):
@@ -280,8 +280,12 @@ class UIISCSIPgIgMaps(UINode):
 
 class UIISCSIPgIg(UINode):
     def __init__(self, pg_ig, parent):
-        UINode.__init__(self, "portal_group%s - initiator_group%s" %
-                        (pg_ig['pg_tag'], pg_ig['ig_tag']), parent)
+        UINode.__init__(
+            self,
+            f"portal_group{pg_ig['pg_tag']} - initiator_group{pg_ig['ig_tag']}",
+            parent,
+        )
+
         self.pg_ig = pg_ig
         self.refresh()
 
@@ -348,7 +352,7 @@ class UIPortalGroups(UINode):
 
 class UIPortalGroup(UINode):
     def __init__(self, pg, parent):
-        UINode.__init__(self, "portal_group%s" % pg.tag, parent)
+        UINode.__init__(self, f"portal_group{pg.tag}", parent)
         self.pg = pg
         self.refresh()
 
@@ -363,8 +367,7 @@ class UIPortalGroup(UINode):
 
 class UIPortal(UINode):
     def __init__(self, host, port, parent):
-        UINode.__init__(self, "host=%s, port=%s" % (
-            host, port), parent)
+        UINode.__init__(self, f"host={host}, port={port}", parent)
         self.refresh()
 
 
@@ -455,7 +458,7 @@ class UIInitiatorGroups(UINode):
 
 class UIInitiatorGroup(UINode):
     def __init__(self, ig, parent):
-        UINode.__init__(self, "initiator_group%s" % ig.tag, parent)
+        UINode.__init__(self, f"initiator_group{ig.tag}", parent)
         self.ig = ig
         self.refresh()
 
@@ -470,7 +473,7 @@ class UIInitiatorGroup(UINode):
 
 class UIInitiator(UINode):
     def __init__(self, initiator, netmask, parent):
-        UINode.__init__(self, "hostname=%s, netmask=%s" % (initiator, netmask), parent)
+        UINode.__init__(self, f"hostname={initiator}, netmask={netmask}", parent)
         self.refresh()
 
 
@@ -491,7 +494,7 @@ class UIISCSIConnections(UINode):
 
 class UIISCSIConnection(UINode):
     def __init__(self, ic, parent):
-        UINode.__init__(self, "%s" % ic['id'], parent)
+        UINode.__init__(self, f"{ic['id']}", parent)
         self.ic = ic
         self.refresh()
 
@@ -500,12 +503,12 @@ class UIISCSIConnection(UINode):
         for key, val in self.ic.items():
             if key == "id":
                 continue
-            UIISCSIConnectionDetails("%s: %s" % (key, val), self)
+            UIISCSIConnectionDetails(f"{key}: {val}", self)
 
 
 class UIISCSIConnectionDetails(UINode):
     def __init__(self, info, parent):
-        UINode.__init__(self, "%s" % info, parent)
+        UINode.__init__(self, f"{info}", parent)
         self.refresh()
 
 
@@ -610,7 +613,7 @@ class UIISCSIAuthGroups(UINode):
             raise JSONRPCException(rpc_messages)
 
     def summary(self):
-        return "Groups: %s" % len(self.iscsi_auth_groups), None
+        return f"Groups: {len(self.iscsi_auth_groups)}", None
 
 
 class UIISCSIAuthGroup(UINode):
@@ -625,13 +628,12 @@ class UIISCSIAuthGroup(UINode):
             UISCSIAuthSecret(secret, self)
 
     def summary(self):
-        return "Secrets: %s" % len(self.ag['secrets']), None
+        return f"Secrets: {len(self.ag['secrets'])}", None
 
 
 class UISCSIAuthSecret(UINode):
     def __init__(self, secret, parent):
-        info_list = ["%s=%s" % (key, val)
-                     for key, val in secret.items()]
+        info_list = [f"{key}={val}" for key, val in secret.items()]
         info_list.sort(reverse=True)
         info = ", ".join(info_list)
         UINode.__init__(self, info, parent)

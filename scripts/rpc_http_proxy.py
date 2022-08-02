@@ -90,7 +90,7 @@ class ServerHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
-        if self.headers['Authorization'] != 'Basic ' + self.key:
+        if self.headers['Authorization'] != f'Basic {self.key}':
             self.do_AUTHHEAD()
         else:
             data_string = self.rfile.read(int(self.headers['Content-Length']))
@@ -111,7 +111,10 @@ def main():
     rpc_sock = args.sock
 
     # encoding user name and password
-    key = base64.b64encode((args.user+':'+args.password).encode(encoding='ascii')).decode('ascii')
+    key = base64.b64encode(
+        f'{args.user}:{args.password}'.encode(encoding='ascii')
+    ).decode('ascii')
+
 
     try:
         ServerHandler.key = key

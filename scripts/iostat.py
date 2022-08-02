@@ -29,34 +29,34 @@ class BdevStat:
             return
         self.qd_period = 0
         for k, value in dictionary.items():
-            if k == 'name':
-                self.bdev_name = value
-            elif k == 'bytes_read':
+            if k == 'bytes_read':
                 self.rd_sectors = value >> 9
-            elif k == 'bytes_written':
-                self.wr_sectors = value >> 9
             elif k == 'bytes_unmapped':
                 self.dc_sectors = value >> 9
-            elif k == 'num_read_ops':
-                self.rd_ios = value
-            elif k == 'num_write_ops':
-                self.wr_ios = value
-            elif k == 'num_unmap_ops':
-                self.dc_ios = value
-            elif k == 'read_latency_ticks':
-                self.rd_ticks = value
-            elif k == 'write_latency_ticks':
-                self.wr_ticks = value
-            elif k == 'unmap_latency_ticks':
-                self.dc_ticks = value
-            elif k == 'queue_depth_polling_period':
-                self.qd_period = value
-            elif k == 'queue_depth':
-                self.queue_depth = value
+            elif k == 'bytes_written':
+                self.wr_sectors = value >> 9
             elif k == 'io_time':
                 self.io_time = value
+            elif k == 'name':
+                self.bdev_name = value
+            elif k == 'num_read_ops':
+                self.rd_ios = value
+            elif k == 'num_unmap_ops':
+                self.dc_ios = value
+            elif k == 'num_write_ops':
+                self.wr_ios = value
+            elif k == 'queue_depth':
+                self.queue_depth = value
+            elif k == 'queue_depth_polling_period':
+                self.qd_period = value
+            elif k == 'read_latency_ticks':
+                self.rd_ticks = value
+            elif k == 'unmap_latency_ticks':
+                self.dc_ticks = value
             elif k == 'weighted_io_time':
                 self.weighted_io_time = value
+            elif k == 'write_latency_ticks':
+                self.wr_ticks = value
         self.upt = 0.0
 
     def __getattr__(self, name):
@@ -88,7 +88,7 @@ def _stat_format(data, header, leave_first=False):
 
     item_sizes = [0 for i in range(header_len)]
 
-    for i in range(0, list_len):
+    for i in range(list_len):
         if leave_first and i == 0:
             item_sizes[i] = len(header[i + 1])
 
@@ -98,7 +98,7 @@ def _stat_format(data, header, leave_first=False):
         index = i + 1 if leave_first else i
         item_sizes[index] = max(len(header[index]), data_len)
 
-    _format = '  '.join('%%-%ss' % item_sizes[i] for i in range(0, header_len))
+    _format = '  '.join('%%-%ss' % item_sizes[i] for i in range(header_len))
     print(_format % tuple(header))
     if leave_first:
         print('\n'.join(_format % ('', *tuple(ll)) for ll in data))
@@ -110,10 +110,10 @@ def _stat_format(data, header, leave_first=False):
 
 
 def read_cpu_stat(last_cpu_info, cpu_info):
-    jiffies = 0
-    for i in range(0, 7):
-        jiffies += cpu_info[i] - \
-            (last_cpu_info[i] if last_cpu_info else 0)
+    jiffies = sum(
+        cpu_info[i] - (last_cpu_info[i] if last_cpu_info else 0)
+        for i in range(7)
+    )
 
     if last_cpu_info:
         info_stat = [
@@ -142,30 +142,24 @@ def read_cpu_stat(last_cpu_info, cpu_info):
 def check_positive(value):
     v = int(value)
     if v <= 0:
-        raise argparse.ArgumentTypeError("%s should be positive int value" % v)
+        raise argparse.ArgumentTypeError(f"{v} should be positive int value")
     return v
 
 
 def get_cpu_stat():
     with open(SPDK_CPU_STAT, "r") as cpu_file:
         cpu_dump_info = []
-        line = cpu_file.readline()
-        while line:
+        while line := cpu_file.readline():
             line = line.strip()
             if "cpu " in line:
                 cpu_dump_info = [int(data) for data in line[5:].split(' ')]
                 break
 
-            line = cpu_file.readline()
     return cpu_dump_info
 
 
 def read_bdev_stat(last_stat, stat, mb, use_upt, ext_info):
-    if use_upt:
-        upt_cur = uptime()
-    else:
-        upt_cur = stat['ticks']
-
+    upt_cur = uptime() if use_upt else stat['ticks']
     upt_rate = stat['tick_rate']
 
     info_stats = []
@@ -177,11 +171,14 @@ def read_bdev_stat(last_stat, stat, mb, use_upt, ext_info):
             _stat = BdevStat(bdev)
             _stat.upt = upt_cur
             bdev_stats.append(_stat)
-            _last_stat = None
-            for last_bdev in last_stat:
-                if (_stat.bdev_name == last_bdev.bdev_name):
-                    _last_stat = last_bdev
-                    break
+            _last_stat = next(
+                (
+                    last_bdev
+                    for last_bdev in last_stat
+                    if (_stat.bdev_name == last_bdev.bdev_name)
+                ),
+                None,
+            )
 
             # get the interval time
             if use_upt:
@@ -190,15 +187,15 @@ def read_bdev_stat(last_stat, stat, mb, use_upt, ext_info):
                 upt = (_stat.upt - _last_stat.upt) / upt_rate
 
             rd_sec = _stat.rd_sectors - _last_stat.rd_sectors
-            if (_stat.rd_sectors < _last_stat.rd_sectors) and (_last_stat.rd_sectors <= SPDK_MAX_SECTORS):
+            if _stat.rd_sectors < _last_stat.rd_sectors <= SPDK_MAX_SECTORS:
                 rd_sec &= SPDK_MAX_SECTORS
 
             wr_sec = _stat.wr_sectors - _last_stat.wr_sectors
-            if (_stat.wr_sectors < _last_stat.wr_sectors) and (_last_stat.wr_sectors <= SPDK_MAX_SECTORS):
+            if _stat.wr_sectors < _last_stat.wr_sectors <= SPDK_MAX_SECTORS:
                 wr_sec &= SPDK_MAX_SECTORS
 
             dc_sec = _stat.dc_sectors - _last_stat.dc_sectors
-            if (_stat.dc_sectors < _last_stat.dc_sectors) and (_last_stat.dc_sectors <= SPDK_MAX_SECTORS):
+            if _stat.dc_sectors < _last_stat.dc_sectors <= SPDK_MAX_SECTORS:
                 dc_sec &= SPDK_MAX_SECTORS
 
             tps = ((_stat.rd_ios + _stat.dc_ios + _stat.wr_ios) -
@@ -266,11 +263,7 @@ def read_bdev_stat(last_stat, stat, mb, use_upt, ext_info):
             _stat.upt = upt_cur
             bdev_stats.append(_stat)
 
-            if use_upt:
-                upt = _stat.upt
-            else:
-                upt = _stat.upt / upt_rate
-
+            upt = _stat.upt if use_upt else _stat.upt / upt_rate
             tps = (_stat.rd_ios + _stat.dc_ios + _stat.wr_ios) / upt
             info_stat = [
                 _stat.bdev_name,

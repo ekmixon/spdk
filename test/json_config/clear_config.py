@@ -10,10 +10,11 @@ from rpc.client import print_dict, JSONRPCException  # noqa
 
 
 def get_bdev_name_key(bdev):
-    bdev_name_key = 'name'
-    if 'method' in bdev and bdev['method'] == 'bdev_split_create':
-        bdev_name_key = "base_bdev"
-    return bdev_name_key
+    return (
+        "base_bdev"
+        if 'method' in bdev and bdev['method'] == 'bdev_split_create'
+        else 'name'
+    )
 
 
 def get_bdev_name(bdev):
@@ -26,7 +27,7 @@ def get_bdev_name(bdev):
         elif 'base_bdev' in bdev['params']:
             bdev_name = bdev['params']['base_bdev']
     if 'method' in bdev and bdev['method'] == 'bdev_error_create':
-        bdev_name = "EE_%s" % bdev_name
+        bdev_name = f"EE_{bdev_name}"
     return bdev_name
 
 
@@ -58,8 +59,7 @@ def clear_bdev_subsystem(args, bdev_config):
     for bdev in bdev_config:
         bdev_name_key = get_bdev_name_key(bdev)
         bdev_name = get_bdev_name(bdev)
-        destroy_method = get_bdev_delete_method(bdev)
-        if destroy_method:
+        if destroy_method := get_bdev_delete_method(bdev):
             args.client.call(destroy_method, {bdev_name_key: bdev_name})
 
     nvme_controllers = args.client.call("bdev_nvme_get_controllers")
@@ -80,8 +80,7 @@ def get_nvmf_destroy_method(nvmf):
 
 def clear_nvmf_subsystem(args, nvmf_config):
     for nvmf in nvmf_config:
-        destroy_method = get_nvmf_destroy_method(nvmf)
-        if destroy_method:
+        if destroy_method := get_nvmf_destroy_method(nvmf):
             args.client.call(destroy_method, {'nqn': nvmf['params']['nqn']})
 
 
@@ -102,16 +101,12 @@ def get_iscsi_name(iscsi):
 
 
 def get_iscsi_name_key(iscsi):
-    if iscsi['method'] == 'iscsi_create_target_node':
-        return "name"
-    else:
-        return 'tag'
+    return "name" if iscsi['method'] == 'iscsi_create_target_node' else 'tag'
 
 
 def clear_iscsi_subsystem(args, iscsi_config):
     for iscsi in iscsi_config:
-        destroy_method = get_iscsi_destroy_method(iscsi)
-        if destroy_method:
+        if destroy_method := get_iscsi_destroy_method(iscsi):
             args.client.call(destroy_method, {get_iscsi_name_key(iscsi): get_iscsi_name(iscsi)})
 
 
@@ -123,8 +118,7 @@ def get_nbd_destroy_method(nbd):
 
 def clear_nbd_subsystem(args, nbd_config):
     for nbd in nbd_config:
-        destroy_method = get_nbd_destroy_method(nbd)
-        if destroy_method:
+        if destroy_method := get_nbd_destroy_method(nbd):
             args.client.call(destroy_method, {'nbd_device': nbd['params']['nbd_device']})
 
 
@@ -201,8 +195,8 @@ if __name__ == "__main__":
         if config is None:
             return
         if args.verbose:
-            print("Calling clear_%s_subsystem" % args.subsystem)
-        globals()["clear_%s_subsystem" % args.subsystem](args, config)
+            print(f"Calling clear_{args.subsystem}_subsystem")
+        globals()[f"clear_{args.subsystem}_subsystem"](args, config)
 
     p = subparsers.add_parser('clear_subsystem', help="""Clear configuration of SPDK subsystem using JSON RPC""")
     p.add_argument('--subsystem', help="""Subsystem name""")

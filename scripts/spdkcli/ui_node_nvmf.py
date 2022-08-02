@@ -52,7 +52,7 @@ class UINVMfTransports(UINode):
                                               max_aq_depth=max_aq_depth)
 
     def summary(self):
-        return "Transports: %s" % len(self.children), None
+        return f"Transports: {len(self.children)}", None
 
 
 class UINVMfTransport(UINode):
@@ -112,7 +112,7 @@ class UINVMfSubsystems(UINode):
             raise JSONRPCException(rpc_messages)
 
     def summary(self):
-        return "Subsystems: %s" % len(self.children), None
+        return f"Subsystems: {len(self.children)}", None
 
 
 class UINVMfSubsystem(UINode):
@@ -148,15 +148,19 @@ class UINVMfSubsystem(UINode):
             nqn=self.subsystem.nqn, disable=disable)
 
     def summary(self):
-        sn = None
-        if hasattr(self.subsystem, 'serial_number'):
-            sn = "sn=%s" % self.subsystem.serial_number
-        st = None
-        if hasattr(self.subsystem, 'subtype'):
-            st = "st=%s" % self.subsystem.subtype
-        allow_any_host = None
-        if self.subsystem.allow_any_host:
-            allow_any_host = "Allow any host"
+        sn = (
+            f"sn={self.subsystem.serial_number}"
+            if hasattr(self.subsystem, 'serial_number')
+            else None
+        )
+
+        st = (
+            f"st={self.subsystem.subtype}"
+            if hasattr(self.subsystem, 'subtype')
+            else None
+        )
+
+        allow_any_host = "Allow any host" if self.subsystem.allow_any_host else None
         info = ", ".join(filter(None, [sn, st, allow_any_host]))
         return info, None
 
@@ -219,17 +223,16 @@ class UINVMfSubsystemListeners(UINode):
             raise JSONRPCException(rpc_messages)
 
     def summary(self):
-        return "Addresses: %s" % len(self.listen_addresses), None
+        return f"Addresses: {len(self.listen_addresses)}", None
 
 
 class UINVMfSubsystemListener(UINode):
     def __init__(self, address, parent):
-        UINode.__init__(self, "%s:%s" % (address['traddr'], address['trsvcid']),
-                        parent)
+        UINode.__init__(self, f"{address['traddr']}:{address['trsvcid']}", parent)
         self.address = address
 
     def summary(self):
-        return "%s" % self.address['trtype'], True
+        return f"{self.address['trtype']}", True
 
 
 class UINVMfSubsystemHosts(UINode):
@@ -282,12 +285,12 @@ class UINVMfSubsystemHosts(UINode):
             raise JSONRPCException(rpc_messages)
 
     def summary(self):
-        return "Hosts: %s" % len(self.hosts), None
+        return f"Hosts: {len(self.hosts)}", None
 
 
 class UINVMfSubsystemHost(UINode):
     def __init__(self, host, parent):
-        UINode.__init__(self, "%s" % host['nqn'], parent)
+        UINode.__init__(self, f"{host['nqn']}", parent)
         self.host = host
 
 
@@ -350,7 +353,7 @@ class UINVMfSubsystemNamespaces(UINode):
             raise JSONRPCException(rpc_messages)
 
     def summary(self):
-        return "Namespaces: %s" % len(self.namespaces), None
+        return f"Namespaces: {len(self.namespaces)}", None
 
 
 class UINVMfSubsystemNamespace(UINode):

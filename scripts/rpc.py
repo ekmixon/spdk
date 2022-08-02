@@ -669,7 +669,7 @@ if __name__ == "__main__":
             for entry in args.config_param:
                 parts = entry.split('=', 1)
                 if len(parts) != 2:
-                    raise Exception('--config %s not in key=value form' % entry)
+                    raise Exception(f'--config {entry} not in key=value form')
                 config_param[parts[0]] = parts[1]
         print_json(rpc.bdev.bdev_rbd_register_cluster(args.client,
                                                       name=args.name,
@@ -709,7 +709,7 @@ if __name__ == "__main__":
             for entry in args.config:
                 parts = entry.split('=', 1)
                 if len(parts) != 2:
-                    raise Exception('--config %s not in key=value form' % entry)
+                    raise Exception(f'--config {entry} not in key=value form')
                 config[parts[0]] = parts[1]
         print_json(rpc.bdev.bdev_rbd_create(args.client,
                                             name=args.name,
@@ -1360,12 +1360,8 @@ Format: 'user:u1 secret:s1 muser:mu1 msecret:ms1,user:u2 secret:s2 muser:mu2 mse
     p.set_defaults(func=iscsi_start_portal_group)
 
     def iscsi_create_initiator_group(args):
-        initiators = []
-        netmasks = []
-        for i in args.initiator_list.strip().split(' '):
-            initiators.append(i)
-        for n in args.netmask_list.strip().split(' '):
-            netmasks.append(n)
+        initiators = list(args.initiator_list.strip().split(' '))
+        netmasks = list(args.netmask_list.strip().split(' '))
         rpc.iscsi.iscsi_create_initiator_group(
             args.client,
             tag=args.tag,
@@ -1386,13 +1382,9 @@ Format: 'user:u1 secret:s1 muser:mu1 msecret:ms1,user:u2 secret:s2 muser:mu2 mse
         initiators = None
         netmasks = None
         if args.initiator_list:
-            initiators = []
-            for i in args.initiator_list.strip().split(' '):
-                initiators.append(i)
+            initiators = list(args.initiator_list.strip().split(' '))
         if args.netmask_list:
-            netmasks = []
-            for n in args.netmask_list.strip().split(' '):
-                netmasks.append(n)
+            netmasks = list(args.netmask_list.strip().split(' '))
         rpc.iscsi.iscsi_initiator_group_add_initiators(
             args.client,
             tag=args.tag,
@@ -1415,13 +1407,9 @@ Format: 'user:u1 secret:s1 muser:mu1 msecret:ms1,user:u2 secret:s2 muser:mu2 mse
         initiators = None
         netmasks = None
         if args.initiator_list:
-            initiators = []
-            for i in args.initiator_list.strip().split(' '):
-                initiators.append(i)
+            initiators = list(args.initiator_list.strip().split(' '))
         if args.netmask_list:
-            netmasks = []
-            for n in args.netmask_list.strip().split(' '):
-                netmasks.append(n)
+            netmasks = list(args.netmask_list.strip().split(' '))
         rpc.iscsi.iscsi_initiator_group_remove_initiators(
             args.client,
             tag=args.tag,
@@ -1758,10 +1746,7 @@ Format: 'user:u1 secret:s1 muser:mu1 msecret:ms1,user:u2 secret:s2 muser:mu2 mse
     p.set_defaults(func=bdev_raid_get_bdevs)
 
     def bdev_raid_create(args):
-        base_bdevs = []
-        for u in args.base_bdevs.strip().split(" "):
-            base_bdevs.append(u)
-
+        base_bdevs = list(args.base_bdevs.strip().split(" "))
         rpc.bdev.bdev_raid_create(args.client,
                                   name=args.name,
                                   strip_size_kb=args.strip_size_kb,
@@ -1817,7 +1802,7 @@ Format: 'user:u1 secret:s1 muser:mu1 msecret:ms1,user:u2 secret:s2 muser:mu2 mse
             for limit in limits.split(','):
                 key, value = limit.split(':', 1)
                 if key in ftl_valid_limits:
-                    arg_dict['limit_' + key + key_suffix] = int(value)
+                    arg_dict[f'limit_{key}{key_suffix}'] = int(value)
                 else:
                     raise ValueError('Limit {} is not supported'.format(key))
 
@@ -2710,7 +2695,10 @@ Format: 'user:u1 secret:s1 muser:mu1 msecret:ms1,user:u2 secret:s2 muser:mu2 mse
 
     def check_called_name(name):
         if name in deprecated_aliases:
-            print("{} is deprecated, use {} instead.".format(name, deprecated_aliases[name]), file=sys.stderr)
+            print(
+                f"{name} is deprecated, use {deprecated_aliases[name]} instead.",
+                file=sys.stderr,
+            )
 
     class dry_run_client:
         def call(self, method, params=None):
@@ -2735,7 +2723,7 @@ Format: 'user:u1 secret:s1 muser:mu1 msecret:ms1,user:u2 secret:s2 muser:mu2 mse
                 call_rpc_func(args)
             except JSONRPCException as ex:
                 print("Exception:")
-                print(executed_rpc.strip() + " <<<")
+                print(f"{executed_rpc.strip()} <<<")
                 print(ex.message)
                 exit(1)
 
@@ -2756,7 +2744,7 @@ Format: 'user:u1 secret:s1 muser:mu1 msecret:ms1,user:u2 secret:s2 muser:mu2 mse
                 except AttributeError:
                     print("Module %s does not contain 'spdk_rpc_plugin_initialize' function" % rpc_module)
             except ModuleNotFoundError:
-                print("Module %s not found" % rpc_module)
+                print(f"Module {rpc_module} not found")
 
     def replace_arg_underscores(args):
         # All option names are defined with dashes only - for example: --tgt-name

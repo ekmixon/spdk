@@ -17,7 +17,7 @@ if (len(sys.argv) == 7):
     netmask = sys.argv[5]
     namespace = sys.argv[6]
 
-ns_cmd = 'ip netns exec ' + namespace
+ns_cmd = f'ip netns exec {namespace}'
 other_ip = '127.0.0.6'
 initiator_name = 'ANY'
 portal_tag = '1'
@@ -77,18 +77,30 @@ def verify_log_flag_rpc_methods(rpc_py, rpc_param):
     rpc = spdk_rpc(rpc_py)
     output = rpc.log_get_flags()
     jsonvalue = json.loads(output)
-    verify(not jsonvalue[rpc_param['log_flag']], 1,
-           "log_get_flags returned {}, expected false".format(jsonvalue))
+    verify(
+        not jsonvalue[rpc_param['log_flag']],
+        1,
+        f"log_get_flags returned {jsonvalue}, expected false",
+    )
+
     rpc.log_set_flag(rpc_param['log_flag'])
     output = rpc.log_get_flags()
     jsonvalue = json.loads(output)
-    verify(jsonvalue[rpc_param['log_flag']], 1,
-           "log_get_flags returned {}, expected true".format(jsonvalue))
+    verify(
+        jsonvalue[rpc_param['log_flag']],
+        1,
+        f"log_get_flags returned {jsonvalue}, expected true",
+    )
+
     rpc.log_clear_flag(rpc_param['log_flag'])
     output = rpc.log_get_flags()
     jsonvalue = json.loads(output)
-    verify(not jsonvalue[rpc_param['log_flag']], 1,
-           "log_get_flags returned {}, expected false".format(jsonvalue))
+    verify(
+        not jsonvalue[rpc_param['log_flag']],
+        1,
+        f"log_get_flags returned {jsonvalue}, expected false",
+    )
+
 
     print("verify_log_flag_rpc_methods passed")
 
@@ -97,28 +109,50 @@ def verify_iscsi_connection_rpc_methods(rpc_py):
     rpc = spdk_rpc(rpc_py)
     output = rpc.iscsi_get_connections()
     jsonvalue = json.loads(output)
-    verify(not jsonvalue, 1,
-           "iscsi_get_connections returned {}, expected empty".format(jsonvalue))
+    verify(
+        not jsonvalue,
+        1,
+        f"iscsi_get_connections returned {jsonvalue}, expected empty",
+    )
+
 
     rpc.bdev_malloc_create(rpc_param['malloc_bdev_size'], rpc_param['malloc_block_size'])
-    rpc.iscsi_create_portal_group(portal_tag, "{}:{}".format(rpc_param['target_ip'], str(rpc_param['port'])))
+    rpc.iscsi_create_portal_group(
+        portal_tag, f"{rpc_param['target_ip']}:{str(rpc_param['port'])}"
+    )
+
     rpc.iscsi_create_initiator_group(initiator_tag, rpc_param['initiator_name'], rpc_param['netmask'])
 
     lun_mapping = "Malloc" + str(rpc_param['lun_total']) + ":0"
-    net_mapping = portal_tag + ":" + initiator_tag
+    net_mapping = f"{portal_tag}:{initiator_tag}"
     rpc.iscsi_create_target_node(rpc_param['target_name'], rpc_param['alias_name'], lun_mapping,
                                  net_mapping, rpc_param['queue_depth'], '-d')
-    check_output('iscsiadm -m discovery -t st -p {}'.format(rpc_param['target_ip']), shell=True)
+    check_output(
+        f"iscsiadm -m discovery -t st -p {rpc_param['target_ip']}", shell=True
+    )
+
     check_output('iscsiadm -m node --login', shell=True)
     name = json.loads(rpc.iscsi_get_target_nodes())[0]['name']
     output = rpc.iscsi_get_connections()
     jsonvalues = json.loads(output)
-    verify(jsonvalues[0]['target_node_name'] == rpc_param['target_name'], 1,
-           "target node name value is {}, expected {}".format(jsonvalues[0]['target_node_name'], rpc_param['target_name']))
-    verify(jsonvalues[0]['initiator_addr'] == rpc_param['initiator_ip'], 1,
-           "initiator address values is {}, expected {}".format(jsonvalues[0]['initiator_addr'], rpc_param['initiator_ip']))
-    verify(jsonvalues[0]['target_addr'] == rpc_param['target_ip'], 1,
-           "target address values is {}, expected {}".format(jsonvalues[0]['target_addr'], rpc_param['target_ip']))
+    verify(
+        jsonvalues[0]['target_node_name'] == rpc_param['target_name'],
+        1,
+        f"target node name value is {jsonvalues[0]['target_node_name']}, expected {rpc_param['target_name']}",
+    )
+
+    verify(
+        jsonvalues[0]['initiator_addr'] == rpc_param['initiator_ip'],
+        1,
+        f"initiator address values is {jsonvalues[0]['initiator_addr']}, expected {rpc_param['initiator_ip']}",
+    )
+
+    verify(
+        jsonvalues[0]['target_addr'] == rpc_param['target_ip'],
+        1,
+        f"target address values is {jsonvalues[0]['target_addr']}, expected {rpc_param['target_ip']}",
+    )
+
 
     check_output('iscsiadm -m node --logout', shell=True)
     check_output('iscsiadm -m node -o delete', shell=True)
@@ -127,8 +161,12 @@ def verify_iscsi_connection_rpc_methods(rpc_py):
     rpc.iscsi_delete_target_node(name)
     output = rpc.iscsi_get_connections()
     jsonvalues = json.loads(output)
-    verify(not jsonvalues, 1,
-           "iscsi_get_connections returned {}, expected empty".format(jsonvalues))
+    verify(
+        not jsonvalues,
+        1,
+        f"iscsi_get_connections returned {jsonvalues}, expected empty",
+    )
+
 
     print("verify_iscsi_connection_rpc_methods passed")
 
@@ -137,18 +175,28 @@ def verify_scsi_devices_rpc_methods(rpc_py):
     rpc = spdk_rpc(rpc_py)
     output = rpc.scsi_get_devices()
     jsonvalue = json.loads(output)
-    verify(not jsonvalue, 1,
-           "scsi_get_devices returned {}, expected empty".format(jsonvalue))
+    verify(
+        not jsonvalue,
+        1,
+        f"scsi_get_devices returned {jsonvalue}, expected empty",
+    )
+
 
     rpc.bdev_malloc_create(rpc_param['malloc_bdev_size'], rpc_param['malloc_block_size'])
-    rpc.iscsi_create_portal_group(portal_tag, "{}:{}".format(rpc_param['target_ip'], str(rpc_param['port'])))
+    rpc.iscsi_create_portal_group(
+        portal_tag, f"{rpc_param['target_ip']}:{str(rpc_param['port'])}"
+    )
+
     rpc.iscsi_create_initiator_group(initiator_tag, rpc_param['initiator_name'], rpc_param['netmask'])
 
     lun_mapping = "Malloc" + str(rpc_param['lun_total']) + ":0"
-    net_mapping = portal_tag + ":" + initiator_tag
+    net_mapping = f"{portal_tag}:{initiator_tag}"
     rpc.iscsi_create_target_node(rpc_param['target_name'], rpc_param['alias_name'], lun_mapping,
                                  net_mapping, rpc_param['queue_depth'], '-d')
-    check_output('iscsiadm -m discovery -t st -p {}'.format(rpc_param['target_ip']), shell=True)
+    check_output(
+        f"iscsiadm -m discovery -t st -p {rpc_param['target_ip']}", shell=True
+    )
+
     check_output('iscsiadm -m node --login', shell=True)
     name = json.loads(rpc.iscsi_get_target_nodes())[0]['name']
     output = rpc.iscsi_get_options()
@@ -156,10 +204,19 @@ def verify_scsi_devices_rpc_methods(rpc_py):
     nodebase = jsonvalues['node_base']
     output = rpc.scsi_get_devices()
     jsonvalues = json.loads(output)
-    verify(jsonvalues[0]['device_name'] == nodebase + ":" + rpc_param['target_name'], 1,
-           "device name value is {}, expected {}".format(jsonvalues[0]['device_name'], rpc_param['target_name']))
-    verify(jsonvalues[0]['id'] == 0, 1,
-           "device id value is {}, expected 0".format(jsonvalues[0]['id']))
+    verify(
+        jsonvalues[0]['device_name']
+        == f"{nodebase}:" + rpc_param['target_name'],
+        1,
+        f"device name value is {jsonvalues[0]['device_name']}, expected {rpc_param['target_name']}",
+    )
+
+    verify(
+        jsonvalues[0]['id'] == 0,
+        1,
+        f"device id value is {jsonvalues[0]['id']}, expected 0",
+    )
+
 
     check_output('iscsiadm -m node --logout', shell=True)
     check_output('iscsiadm -m node -o delete', shell=True)
@@ -168,8 +225,12 @@ def verify_scsi_devices_rpc_methods(rpc_py):
     rpc.iscsi_delete_target_node(name)
     output = rpc.scsi_get_devices()
     jsonvalues = json.loads(output)
-    verify(not jsonvalues, 1,
-           "scsi_get_devices returned {}, expected empty".format(jsonvalues))
+    verify(
+        not jsonvalues,
+        1,
+        f"scsi_get_devices returned {jsonvalues}, expected empty",
+    )
+
 
     print("verify_scsi_devices_rpc_methods passed")
 
@@ -177,7 +238,7 @@ def verify_scsi_devices_rpc_methods(rpc_py):
 def create_malloc_bdevs_rpc_methods(rpc_py, rpc_param):
     rpc = spdk_rpc(rpc_py)
 
-    for i in range(1, rpc_param['lun_total'] + 1):
+    for _ in range(1, rpc_param['lun_total'] + 1):
         rpc.bdev_malloc_create(rpc_param['malloc_bdev_size'], rpc_param['malloc_block_size'])
 
     print("create_malloc_bdevs_rpc_methods passed")
@@ -187,45 +248,82 @@ def verify_portal_groups_rpc_methods(rpc_py, rpc_param):
     rpc = spdk_rpc(rpc_py)
     output = rpc.iscsi_get_portal_groups()
     jsonvalues = json.loads(output)
-    verify(not jsonvalues, 1,
-           "iscsi_get_portal_groups returned {} groups, expected empty".format(jsonvalues))
+    verify(
+        not jsonvalues,
+        1,
+        f"iscsi_get_portal_groups returned {jsonvalues} groups, expected empty",
+    )
+
 
     lo_ip = (target_ip, other_ip)
     for idx, value in enumerate(lo_ip):
         # The portal group tag must start at 1
         tag = idx + 1
-        rpc.iscsi_create_portal_group(tag, "{}:{}".format(value, rpc_param['port']))
+        rpc.iscsi_create_portal_group(tag, f"{value}:{rpc_param['port']}")
         output = rpc.iscsi_get_portal_groups()
         jsonvalues = json.loads(output)
-        verify(len(jsonvalues) == tag, 1,
-               "iscsi_get_portal_groups returned {} groups, expected {}".format(len(jsonvalues), tag))
+        verify(
+            len(jsonvalues) == tag,
+            1,
+            f"iscsi_get_portal_groups returned {len(jsonvalues)} groups, expected {tag}",
+        )
+
 
     tag_list = []
     for idx, value in enumerate(jsonvalues):
-        verify(value['portals'][0]['host'] == lo_ip[idx], 1,
-               "host value is {}, expected {}".format(value['portals'][0]['host'], rpc_param['target_ip']))
-        verify(value['portals'][0]['port'] == str(rpc_param['port']), 1,
-               "port value is {}, expected {}".format(value['portals'][0]['port'], str(rpc_param['port'])))
+        verify(
+            value['portals'][0]['host'] == lo_ip[idx],
+            1,
+            f"host value is {value['portals'][0]['host']}, expected {rpc_param['target_ip']}",
+        )
+
+        verify(
+            value['portals'][0]['port'] == str(rpc_param['port']),
+            1,
+            f"port value is {value['portals'][0]['port']}, expected {str(rpc_param['port'])}",
+        )
+
         tag_list.append(value['tag'])
-        verify(value['tag'] == idx + 1, 1,
-               "tag value is {}, expected {}".format(value['tag'], idx + 1))
+        verify(
+            value['tag'] == idx + 1,
+            1,
+            f"tag value is {value['tag']}, expected {idx + 1}",
+        )
+
 
     for idx, value in enumerate(tag_list):
         rpc.iscsi_delete_portal_group(value)
         output = rpc.iscsi_get_portal_groups()
         jsonvalues = json.loads(output)
-        verify(len(jsonvalues) == (len(tag_list) - (idx + 1)), 1,
-               "get_portal_group returned {} groups, expected {}".format(len(jsonvalues), (len(tag_list) - (idx + 1))))
+        verify(
+            len(jsonvalues) == (len(tag_list) - (idx + 1)),
+            1,
+            f"get_portal_group returned {len(jsonvalues)} groups, expected {len(tag_list) - (idx + 1)}",
+        )
+
         if not jsonvalues:
             break
 
         for jidx, jvalue in enumerate(jsonvalues):
-            verify(jvalue['portals'][0]['host'] == lo_ip[idx + jidx + 1], 1,
-                   "host value is {}, expected {}".format(jvalue['portals'][0]['host'], lo_ip[idx + jidx + 1]))
-            verify(jvalue['portals'][0]['port'] == str(rpc_param['port']), 1,
-                   "port value is {}, expected {}".format(jvalue['portals'][0]['port'], str(rpc_param['port'])))
-            verify(jvalue['tag'] != value or jvalue['tag'] == tag_list[idx + jidx + 1], 1,
-                   "tag value is {}, expected {} and not {}".format(jvalue['tag'], tag_list[idx + jidx + 1], value))
+            verify(
+                jvalue['portals'][0]['host'] == lo_ip[idx + jidx + 1],
+                1,
+                f"host value is {jvalue['portals'][0]['host']}, expected {lo_ip[idx + jidx + 1]}",
+            )
+
+            verify(
+                jvalue['portals'][0]['port'] == str(rpc_param['port']),
+                1,
+                f"port value is {jvalue['portals'][0]['port']}, expected {str(rpc_param['port'])}",
+            )
+
+            verify(
+                jvalue['tag'] != value
+                or jvalue['tag'] == tag_list[idx + jidx + 1],
+                1,
+                f"tag value is {jvalue['tag']}, expected {tag_list[idx + jidx + 1]} and not {value}",
+            )
+
 
     print("verify_portal_groups_rpc_methods passed")
 
@@ -234,26 +332,46 @@ def verify_initiator_groups_rpc_methods(rpc_py, rpc_param):
     rpc = spdk_rpc(rpc_py)
     output = rpc.iscsi_get_initiator_groups()
     jsonvalues = json.loads(output)
-    verify(not jsonvalues, 1,
-           "iscsi_get_initiator_groups returned {}, expected empty".format(jsonvalues))
+    verify(
+        not jsonvalues,
+        1,
+        f"iscsi_get_initiator_groups returned {jsonvalues}, expected empty",
+    )
+
     for idx, value in enumerate(rpc_param['netmask']):
         # The initiator group tag must start at 1
         tag = idx + 1
         rpc.iscsi_create_initiator_group(tag, rpc_param['initiator_name'], value)
         output = rpc.iscsi_get_initiator_groups()
         jsonvalues = json.loads(output)
-        verify(len(jsonvalues) == tag, 1,
-               "iscsi_get_initiator_groups returned {} groups, expected {}".format(len(jsonvalues), tag))
+        verify(
+            len(jsonvalues) == tag,
+            1,
+            f"iscsi_get_initiator_groups returned {len(jsonvalues)} groups, expected {tag}",
+        )
+
 
     tag_list = []
     for idx, value in enumerate(jsonvalues):
-        verify(value['initiators'][0] == rpc_param['initiator_name'], 1,
-               "initiator value is {}, expected {}".format(value['initiators'][0], rpc_param['initiator_name']))
+        verify(
+            value['initiators'][0] == rpc_param['initiator_name'],
+            1,
+            f"initiator value is {value['initiators'][0]}, expected {rpc_param['initiator_name']}",
+        )
+
         tag_list.append(value['tag'])
-        verify(value['tag'] == idx + 1, 1,
-               "tag value is {}, expected {}".format(value['tag'], idx + 1))
-        verify(value['netmasks'][0] == rpc_param['netmask'][idx], 1,
-               "netmasks value is {}, expected {}".format(value['netmasks'][0], rpc_param['netmask'][idx]))
+        verify(
+            value['tag'] == idx + 1,
+            1,
+            f"tag value is {value['tag']}, expected {idx + 1}",
+        )
+
+        verify(
+            value['netmasks'][0] == rpc_param['netmask'][idx],
+            1,
+            f"netmasks value is {value['netmasks'][0]}, expected {rpc_param['netmask'][idx]}",
+        )
+
 
     for idx, value in enumerate(rpc_param['netmask']):
         tag = idx + 1
@@ -261,52 +379,101 @@ def verify_initiator_groups_rpc_methods(rpc_py, rpc_param):
 
     output = rpc.iscsi_get_initiator_groups()
     jsonvalues = json.loads(output)
-    verify(len(jsonvalues) == tag, 1,
-           "iscsi_get_initiator_groups returned {} groups, expected {}".format(len(jsonvalues), tag))
+    verify(
+        len(jsonvalues) == tag,
+        1,
+        f"iscsi_get_initiator_groups returned {len(jsonvalues)} groups, expected {tag}",
+    )
+
 
     for idx, value in enumerate(jsonvalues):
-        verify(value['tag'] == idx + 1, 1,
-               "tag value is {}, expected {}".format(value['tag'], idx + 1))
+        verify(
+            value['tag'] == idx + 1,
+            1,
+            f"tag value is {value['tag']}, expected {idx + 1}",
+        )
+
         initiators = value.get('initiators')
-        verify(len(initiators) == 0, 1,
-               "length of initiator list is {}, expected 0".format(len(initiators)))
+        verify(
+            len(initiators) == 0,
+            1,
+            f"length of initiator list is {len(initiators)}, expected 0",
+        )
+
         netmasks = value.get('netmasks')
-        verify(len(netmasks) == 0, 1,
-               "length of netmask list is {}, expected 0".format(len(netmasks)))
+        verify(
+            len(netmasks) == 0,
+            1,
+            f"length of netmask list is {len(netmasks)}, expected 0",
+        )
+
 
     for idx, value in enumerate(rpc_param['netmask']):
         tag = idx + 1
         rpc.iscsi_initiator_group_add_initiators(tag, '-n', rpc_param['initiator_name'], '-m', value)
     output = rpc.iscsi_get_initiator_groups()
     jsonvalues = json.loads(output)
-    verify(len(jsonvalues) == tag, 1,
-           "iscsi_get_initiator_groups returned {} groups, expected {}".format(len(jsonvalues), tag))
+    verify(
+        len(jsonvalues) == tag,
+        1,
+        f"iscsi_get_initiator_groups returned {len(jsonvalues)} groups, expected {tag}",
+    )
+
 
     tag_list = []
     for idx, value in enumerate(jsonvalues):
-        verify(value['initiators'][0] == rpc_param['initiator_name'], 1,
-               "initiator value is {}, expected {}".format(value['initiators'][0], rpc_param['initiator_name']))
+        verify(
+            value['initiators'][0] == rpc_param['initiator_name'],
+            1,
+            f"initiator value is {value['initiators'][0]}, expected {rpc_param['initiator_name']}",
+        )
+
         tag_list.append(value['tag'])
-        verify(value['tag'] == idx + 1, 1,
-               "tag value is {}, expected {}".format(value['tag'], idx + 1))
-        verify(value['netmasks'][0] == rpc_param['netmask'][idx], 1,
-               "netmasks value is {}, expected {}".format(value['netmasks'][0], rpc_param['netmask'][idx]))
+        verify(
+            value['tag'] == idx + 1,
+            1,
+            f"tag value is {value['tag']}, expected {idx + 1}",
+        )
+
+        verify(
+            value['netmasks'][0] == rpc_param['netmask'][idx],
+            1,
+            f"netmasks value is {value['netmasks'][0]}, expected {rpc_param['netmask'][idx]}",
+        )
+
 
     for idx, value in enumerate(tag_list):
         rpc.iscsi_delete_initiator_group(value)
         output = rpc.iscsi_get_initiator_groups()
         jsonvalues = json.loads(output)
-        verify(len(jsonvalues) == (len(tag_list) - (idx + 1)), 1,
-               "iscsi_get_initiator_groups returned {} groups, expected {}".format(len(jsonvalues), (len(tag_list) - (idx + 1))))
+        verify(
+            len(jsonvalues) == (len(tag_list) - (idx + 1)),
+            1,
+            f"iscsi_get_initiator_groups returned {len(jsonvalues)} groups, expected {len(tag_list) - (idx + 1)}",
+        )
+
         if not jsonvalues:
             break
         for jidx, jvalue in enumerate(jsonvalues):
-            verify(jvalue['initiators'][0] == rpc_param['initiator_name'], 1,
-                   "initiator value is {}, expected {}".format(jvalue['initiators'][0], rpc_param['initiator_name']))
-            verify(jvalue['tag'] != value or jvalue['tag'] == tag_list[idx + jidx + 1], 1,
-                   "tag value is {}, expected {} and not {}".format(jvalue['tag'], tag_list[idx + jidx + 1], value))
-            verify(jvalue['netmasks'][0] == rpc_param['netmask'][idx + jidx + 1], 1,
-                   "netmasks value is {}, expected {}".format(jvalue['netmasks'][0], rpc_param['netmask'][idx + jidx + 1]))
+            verify(
+                jvalue['initiators'][0] == rpc_param['initiator_name'],
+                1,
+                f"initiator value is {jvalue['initiators'][0]}, expected {rpc_param['initiator_name']}",
+            )
+
+            verify(
+                jvalue['tag'] != value
+                or jvalue['tag'] == tag_list[idx + jidx + 1],
+                1,
+                f"tag value is {jvalue['tag']}, expected {tag_list[idx + jidx + 1]} and not {value}",
+            )
+
+            verify(
+                jvalue['netmasks'][0] == rpc_param['netmask'][idx + jidx + 1],
+                1,
+                f"netmasks value is {jvalue['netmasks'][0]}, expected {rpc_param['netmask'][idx + jidx + 1]}",
+            )
+
 
     print("verify_initiator_groups_rpc_method passed.")
 
@@ -318,63 +485,139 @@ def verify_target_nodes_rpc_methods(rpc_py, rpc_param):
     nodebase = jsonvalues['node_base']
     output = rpc.iscsi_get_target_nodes()
     jsonvalues = json.loads(output)
-    verify(not jsonvalues, 1,
-           "iscsi_get_target_nodes returned {}, expected empty".format(jsonvalues))
+    verify(
+        not jsonvalues,
+        1,
+        f"iscsi_get_target_nodes returned {jsonvalues}, expected empty",
+    )
+
 
     rpc.bdev_malloc_create(rpc_param['malloc_bdev_size'], rpc_param['malloc_block_size'])
-    rpc.iscsi_create_portal_group(portal_tag, "{}:{}".format(rpc_param['target_ip'], str(rpc_param['port'])))
+    rpc.iscsi_create_portal_group(
+        portal_tag, f"{rpc_param['target_ip']}:{str(rpc_param['port'])}"
+    )
+
     rpc.iscsi_create_initiator_group(initiator_tag, rpc_param['initiator_name'], rpc_param['netmask'])
 
     lun_mapping = "Malloc" + str(rpc_param['lun_total']) + ":0"
-    net_mapping = portal_tag + ":" + initiator_tag
+    net_mapping = f"{portal_tag}:{initiator_tag}"
     rpc.iscsi_create_target_node(rpc_param['target_name'], rpc_param['alias_name'], lun_mapping,
                                  net_mapping, rpc_param['queue_depth'], '-d')
     output = rpc.iscsi_get_target_nodes()
     jsonvalues = json.loads(output)
-    verify(len(jsonvalues) == 1, 1,
-           "iscsi_get_target_nodes returned {} nodes, expected 1".format(len(jsonvalues)))
+    verify(
+        len(jsonvalues) == 1,
+        1,
+        f"iscsi_get_target_nodes returned {len(jsonvalues)} nodes, expected 1",
+    )
+
     bdev_name = jsonvalues[0]['luns'][0]['bdev_name']
-    verify(bdev_name == "Malloc" + str(rpc_param['lun_total']), 1,
-           "bdev_name value is {}, expected Malloc{}".format(jsonvalues[0]['luns'][0]['bdev_name'], str(rpc_param['lun_total'])))
+    verify(
+        bdev_name == "Malloc" + str(rpc_param['lun_total']),
+        1,
+        f"bdev_name value is {jsonvalues[0]['luns'][0]['bdev_name']}, expected Malloc{str(rpc_param['lun_total'])}",
+    )
+
     name = jsonvalues[0]['name']
-    verify(name == nodebase + ":" + rpc_param['target_name'], 1,
-           "target name value is {}, expected {}".format(name, nodebase + ":" + rpc_param['target_name']))
-    verify(jsonvalues[0]['alias_name'] == rpc_param['alias_name'], 1,
-           "target alias_name value is {}, expected {}".format(jsonvalues[0]['alias_name'], rpc_param['alias_name']))
-    verify(jsonvalues[0]['luns'][0]['lun_id'] == 0, 1,
-           "lun id value is {}, expected 0".format(jsonvalues[0]['luns'][0]['lun_id']))
-    verify(jsonvalues[0]['pg_ig_maps'][0]['ig_tag'] == int(initiator_tag), 1,
-           "initiator group tag value is {}, expected {}".format(jsonvalues[0]['pg_ig_maps'][0]['ig_tag'], initiator_tag))
-    verify(jsonvalues[0]['queue_depth'] == rpc_param['queue_depth'], 1,
-           "queue depth value is {}, expected {}".format(jsonvalues[0]['queue_depth'], rpc_param['queue_depth']))
-    verify(jsonvalues[0]['pg_ig_maps'][0]['pg_tag'] == int(portal_tag), 1,
-           "portal group tag value is {}, expected {}".format(jsonvalues[0]['pg_ig_maps'][0]['pg_tag'], portal_tag))
-    verify(jsonvalues[0]['disable_chap'] == rpc_param['disable_chap'], 1,
-           "disable chap value is {}, expected {}".format(jsonvalues[0]['disable_chap'], rpc_param['disable_chap']))
-    verify(jsonvalues[0]['mutual_chap'] == rpc_param['mutual_chap'], 1,
-           "chap mutual value is {}, expected {}".format(jsonvalues[0]['mutual_chap'], rpc_param['mutual_chap']))
-    verify(jsonvalues[0]['require_chap'] == rpc_param['require_chap'], 1,
-           "chap required value is {}, expected {}".format(jsonvalues[0]['require_chap'], rpc_param['require_chap']))
-    verify(jsonvalues[0]['chap_group'] == rpc_param['chap_group'], 1,
-           "chap auth group value is {}, expected {}".format(jsonvalues[0]['chap_group'], rpc_param['chap_group']))
-    verify(jsonvalues[0]['header_digest'] == rpc_param['header_digest'], 1,
-           "header digest value is {}, expected {}".format(jsonvalues[0]['header_digest'], rpc_param['header_digest']))
-    verify(jsonvalues[0]['data_digest'] == rpc_param['data_digest'], 1,
-           "data digest value is {}, expected {}".format(jsonvalues[0]['data_digest'], rpc_param['data_digest']))
+    verify(
+        name == f"{nodebase}:" + rpc_param['target_name'],
+        1,
+        f"""target name value is {name}, expected {f"{nodebase}:" + rpc_param['target_name']}""",
+    )
+
+    verify(
+        jsonvalues[0]['alias_name'] == rpc_param['alias_name'],
+        1,
+        f"target alias_name value is {jsonvalues[0]['alias_name']}, expected {rpc_param['alias_name']}",
+    )
+
+    verify(
+        jsonvalues[0]['luns'][0]['lun_id'] == 0,
+        1,
+        f"lun id value is {jsonvalues[0]['luns'][0]['lun_id']}, expected 0",
+    )
+
+    verify(
+        jsonvalues[0]['pg_ig_maps'][0]['ig_tag'] == int(initiator_tag),
+        1,
+        f"initiator group tag value is {jsonvalues[0]['pg_ig_maps'][0]['ig_tag']}, expected {initiator_tag}",
+    )
+
+    verify(
+        jsonvalues[0]['queue_depth'] == rpc_param['queue_depth'],
+        1,
+        f"queue depth value is {jsonvalues[0]['queue_depth']}, expected {rpc_param['queue_depth']}",
+    )
+
+    verify(
+        jsonvalues[0]['pg_ig_maps'][0]['pg_tag'] == int(portal_tag),
+        1,
+        f"portal group tag value is {jsonvalues[0]['pg_ig_maps'][0]['pg_tag']}, expected {portal_tag}",
+    )
+
+    verify(
+        jsonvalues[0]['disable_chap'] == rpc_param['disable_chap'],
+        1,
+        f"disable chap value is {jsonvalues[0]['disable_chap']}, expected {rpc_param['disable_chap']}",
+    )
+
+    verify(
+        jsonvalues[0]['mutual_chap'] == rpc_param['mutual_chap'],
+        1,
+        f"chap mutual value is {jsonvalues[0]['mutual_chap']}, expected {rpc_param['mutual_chap']}",
+    )
+
+    verify(
+        jsonvalues[0]['require_chap'] == rpc_param['require_chap'],
+        1,
+        f"chap required value is {jsonvalues[0]['require_chap']}, expected {rpc_param['require_chap']}",
+    )
+
+    verify(
+        jsonvalues[0]['chap_group'] == rpc_param['chap_group'],
+        1,
+        f"chap auth group value is {jsonvalues[0]['chap_group']}, expected {rpc_param['chap_group']}",
+    )
+
+    verify(
+        jsonvalues[0]['header_digest'] == rpc_param['header_digest'],
+        1,
+        f"header digest value is {jsonvalues[0]['header_digest']}, expected {rpc_param['header_digest']}",
+    )
+
+    verify(
+        jsonvalues[0]['data_digest'] == rpc_param['data_digest'],
+        1,
+        f"data digest value is {jsonvalues[0]['data_digest']}, expected {rpc_param['data_digest']}",
+    )
+
     lun_id = '1'
     rpc.iscsi_target_node_add_lun(name, bdev_name, "-i", lun_id)
     output = rpc.iscsi_get_target_nodes()
     jsonvalues = json.loads(output)
-    verify(jsonvalues[0]['luns'][1]['bdev_name'] == "Malloc" + str(rpc_param['lun_total']), 1,
-           "bdev_name value is {}, expected Malloc{}".format(jsonvalues[0]['luns'][0]['bdev_name'], str(rpc_param['lun_total'])))
-    verify(jsonvalues[0]['luns'][1]['lun_id'] == 1, 1,
-           "lun id value is {}, expected 1".format(jsonvalues[0]['luns'][1]['lun_id']))
+    verify(
+        jsonvalues[0]['luns'][1]['bdev_name']
+        == "Malloc" + str(rpc_param['lun_total']),
+        1,
+        f"bdev_name value is {jsonvalues[0]['luns'][0]['bdev_name']}, expected Malloc{str(rpc_param['lun_total'])}",
+    )
+
+    verify(
+        jsonvalues[0]['luns'][1]['lun_id'] == 1,
+        1,
+        f"lun id value is {jsonvalues[0]['luns'][1]['lun_id']}, expected 1",
+    )
+
 
     rpc.iscsi_delete_target_node(name)
     output = rpc.iscsi_get_target_nodes()
     jsonvalues = json.loads(output)
-    verify(not jsonvalues, 1,
-           "iscsi_get_target_nodes returned {}, expected empty".format(jsonvalues))
+    verify(
+        not jsonvalues,
+        1,
+        f"iscsi_get_target_nodes returned {jsonvalues}, expected empty",
+    )
+
 
     rpc.iscsi_create_target_node(rpc_param['target_name'], rpc_param['alias_name'], lun_mapping,
                                  net_mapping, rpc_param['queue_depth'], '-d')
@@ -393,9 +636,13 @@ def verify_target_nodes_rpc_methods(rpc_py, rpc_param):
 def help_get_interface_ip_list(rpc_py, nic_name):
     rpc = spdk_rpc(rpc_py)
     nics = json.loads(rpc.net_get_interfaces())
-    nic = list([x for x in nics if x["name"] == nic_name])
-    verify(len(nic) != 0, 1,
-           "Nic name: {} is not found in {}".format(nic_name, [x["name"] for x in nics]))
+    nic = [x for x in nics if x["name"] == nic_name]
+    verify(
+        len(nic) != 0,
+        1,
+        f'Nic name: {nic_name} is not found in {[x["name"] for x in nics]}',
+    )
+
     return nic[0]["ip_addr"]
 
 
@@ -412,7 +659,7 @@ if __name__ == "__main__":
         verify_scsi_devices_rpc_methods(rpc_py)
         verify_iscsi_connection_rpc_methods(rpc_py)
     except RpcException as e:
-        print("{}. Exiting with status {}".format(e.message, e.retval))
+        print(f"{e.message}. Exiting with status {e.retval}")
         raise e
     except Exception as e:
         raise e

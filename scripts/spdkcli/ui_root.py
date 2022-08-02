@@ -30,11 +30,6 @@ class UIRoot(UINode):
                                    "Please initialize subsystems with framework_start_init command.\n"
                                    "List of available commands in current state:\n"
                                    "%s" % methods)
-        else:
-            # Pass because we'd like to build main tree structure for "ls"
-            # even if state is uninitialized
-            pass
-
         self._children = set([])
         UIBdevs(self)
         UILvolStores(self)
@@ -110,8 +105,7 @@ class UIRoot(UINode):
             # (cannot have space), but the product name in SPDK is "Logical Volume"
             bdev_type = bdev_type.replace("_", " ")
             for bdev in [x for x in self.current_bdevs if bdev_type in x["product_name"].lower()]:
-                test = Bdev(bdev)
-                yield test
+                yield Bdev(bdev)
 
     def bdev_get_iostat(self, **kwargs):
         return rpc.bdev.bdev_get_iostat(self.client, **kwargs)
@@ -127,8 +121,7 @@ class UIRoot(UINode):
 
     @verbose
     def create_malloc_bdev(self, **kwargs):
-        response = rpc.bdev.bdev_malloc_create(self.client, **kwargs)
-        return response
+        return rpc.bdev.bdev_malloc_create(self.client, **kwargs)
 
     @verbose
     def bdev_malloc_delete(self, **kwargs):
@@ -136,8 +129,7 @@ class UIRoot(UINode):
 
     @verbose
     def create_iscsi_bdev(self, **kwargs):
-        response = rpc.bdev.bdev_iscsi_create(self.client, **kwargs)
-        return response
+        return rpc.bdev.bdev_iscsi_create(self.client, **kwargs)
 
     @verbose
     def bdev_iscsi_delete(self, **kwargs):
@@ -145,8 +137,7 @@ class UIRoot(UINode):
 
     @verbose
     def bdev_aio_create(self, **kwargs):
-        response = rpc.bdev.bdev_aio_create(self.client, **kwargs)
-        return response
+        return rpc.bdev.bdev_aio_create(self.client, **kwargs)
 
     @verbose
     def bdev_aio_delete(self, **kwargs):
@@ -154,18 +145,15 @@ class UIRoot(UINode):
 
     @verbose
     def create_lvol_bdev(self, **kwargs):
-        response = rpc.lvol.bdev_lvol_create(self.client, **kwargs)
-        return response
+        return rpc.lvol.bdev_lvol_create(self.client, **kwargs)
 
     @verbose
     def bdev_lvol_delete(self, **kwargs):
-        response = rpc.lvol.bdev_lvol_delete(self.client, **kwargs)
-        return response
+        return rpc.lvol.bdev_lvol_delete(self.client, **kwargs)
 
     @verbose
     def create_nvme_bdev(self, **kwargs):
-        response = rpc.bdev.bdev_nvme_attach_controller(self.client, **kwargs)
-        return response
+        return rpc.bdev.bdev_nvme_attach_controller(self.client, **kwargs)
 
     @verbose
     def bdev_nvme_detach_controller(self, **kwargs):
@@ -173,8 +161,7 @@ class UIRoot(UINode):
 
     @verbose
     def bdev_null_create(self, **kwargs):
-        response = rpc.bdev.bdev_null_create(self.client, **kwargs)
-        return response
+        return rpc.bdev.bdev_null_create(self.client, **kwargs)
 
     @verbose
     def bdev_null_delete(self, **kwargs):
@@ -198,8 +185,7 @@ class UIRoot(UINode):
 
     @verbose
     def bdev_lvol_create_lvstore(self, **kwargs):
-        response = rpc.lvol.bdev_lvol_create_lvstore(self.client, **kwargs)
-        return response
+        return rpc.lvol.bdev_lvol_create_lvstore(self.client, **kwargs)
 
     @verbose
     def bdev_lvol_delete_lvstore(self, **kwargs):
@@ -207,8 +193,7 @@ class UIRoot(UINode):
 
     @verbose
     def bdev_pmem_create_pool(self, **kwargs):
-        response = rpc.pmem.bdev_pmem_create_pool(self.client, **kwargs)
-        return response
+        return rpc.pmem.bdev_pmem_create_pool(self.client, **kwargs)
 
     @verbose
     def bdev_pmem_delete_pool(self, **kwargs):
@@ -216,28 +201,23 @@ class UIRoot(UINode):
 
     @verbose
     def bdev_pmem_get_pool_info(self, **kwargs):
-        response = rpc.pmem.bdev_pmem_get_pool_info(self.client, **kwargs)
-        return response
+        return rpc.pmem.bdev_pmem_get_pool_info(self.client, **kwargs)
 
     @verbose
     def bdev_pmem_create(self, **kwargs):
-        response = rpc.bdev.bdev_pmem_create(self.client, **kwargs)
-        return response
+        return rpc.bdev.bdev_pmem_create(self.client, **kwargs)
 
     @verbose
     def bdev_pmem_delete(self, **kwargs):
-        response = rpc.bdev.bdev_pmem_delete(self.client, **kwargs)
-        return response
+        return rpc.bdev.bdev_pmem_delete(self.client, **kwargs)
 
     @verbose
     def create_rbd_bdev(self, **kwargs):
-        response = rpc.bdev.bdev_rbd_create(self.client, **kwargs)
-        return response
+        return rpc.bdev.bdev_rbd_create(self.client, **kwargs)
 
     @verbose
     def bdev_rbd_delete(self, **kwargs):
-        response = rpc.bdev.bdev_rbd_delete(self.client, **kwargs)
-        return response
+        return rpc.bdev.bdev_rbd_delete(self.client, **kwargs)
 
     @verbose
     def create_virtio_dev(self, **kwargs):
@@ -246,8 +226,7 @@ class UIRoot(UINode):
 
     @verbose
     def bdev_virtio_detach_controller(self, **kwargs):
-        response = rpc.vhost.bdev_virtio_detach_controller(self.client, **kwargs)
-        return response
+        return rpc.vhost.bdev_virtio_detach_controller(self.client, **kwargs)
 
     @verbose
     def bdev_raid_create(self, **kwargs):
@@ -262,8 +241,7 @@ class UIRoot(UINode):
     def bdev_virtio_scsi_get_devices(self):
         if self.is_init:
             for bdev in rpc.vhost.bdev_virtio_scsi_get_devices(self.client):
-                test = Bdev(bdev)
-                yield test
+                yield Bdev(bdev)
 
     def list_vhost_ctrls(self):
         if self.is_init:
@@ -379,8 +357,7 @@ class UIRoot(UINode):
     @is_method_available
     def iscsi_get_target_nodes(self):
         if self.is_init:
-            for tg in rpc.iscsi.iscsi_get_target_nodes(self.client):
-                yield tg
+            yield from rpc.iscsi.iscsi_get_target_nodes(self.client)
 
     @verbose
     def iscsi_create_target_node(self, **kwargs):
@@ -424,8 +401,7 @@ class UIRoot(UINode):
     @is_method_available
     def iscsi_get_connections(self, **kwargs):
         if self.is_init:
-            for ic in rpc.iscsi.iscsi_get_connections(self.client, **kwargs):
-                yield ic
+            yield from rpc.iscsi.iscsi_get_connections(self.client, **kwargs)
 
     @verbose
     def iscsi_initiator_group_add_initiators(self, **kwargs):
@@ -482,10 +458,10 @@ class UIRoot(UINode):
         return rpc.iscsi.iscsi_get_options(self.client, **kwargs)
 
     def has_subsystem(self, subsystem):
-        for system in rpc.subsystem.framework_get_subsystems(self.client):
-            if subsystem.lower() == system["subsystem"].lower():
-                return True
-        return False
+        return any(
+            subsystem.lower() == system["subsystem"].lower()
+            for system in rpc.subsystem.framework_get_subsystems(self.client)
+        )
 
 
 class Bdev(object):

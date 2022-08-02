@@ -14,7 +14,7 @@ def lbsize(block):
     if not os.path.exists("/sys/block/%s/queue/logical_block_size"):
         return 512
 
-    with open("/sys/block/%s/queue/logical_block_size" % block) as lbs:
+    with open(f"/sys/block/{block}/queue/logical_block_size") as lbs:
         return int(lbs.read())
 
 
@@ -27,10 +27,10 @@ def readb(block, offset, length, format="Q"):
 
 
 def is_spdk_gpt(block, entry):
-    block_path = "/dev/" + block
+    block_path = f"/dev/{block}"
 
     if not block_exists(block_path):
-        print("%s is not a block device" % block)
+        print(f"{block} is not a block device")
         return False
 
     disk_lbsize = lbsize(block)
@@ -66,5 +66,5 @@ if __name__ == "__main__":
             exit(0)
         exit(1)
     except Exception as e:
-        print("Failed to read GPT data from %s (%s)" % (args.block, e))
+        print(f"Failed to read GPT data from {args.block} ({e})")
         exit(1)

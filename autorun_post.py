@@ -11,11 +11,7 @@ import pandas as pd
 
 def highest_value(inp):
     ret_value = False
-    for x in inp:
-        if x:
-            return True
-    else:
-        return False
+    return any(inp)
 
 
 def generateTestCompletionTables(output_dir, completion_table):
@@ -38,7 +34,7 @@ def generateCoverageReport(output_dir, repo_dir):
     covfiles = [os.path.abspath(p) for p in glob.glob(coveragePath, recursive=True)]
     for f in covfiles:
         print(f)
-    if len(covfiles) == 0:
+    if not covfiles:
         return
     lcov_opts = [
         '--rc lcov_branch_coverage=1',
@@ -58,10 +54,9 @@ def generateCoverageReport(output_dir, repo_dir):
         print("lcov failed")
         print(e)
         return
-    cov_total_file = open(cov_total, 'r')
-    replacement = "SF:" + repo_dir
-    file_contents = cov_total_file.readlines()
-    cov_total_file.close()
+    with open(cov_total, 'r') as cov_total_file:
+        replacement = "SF:" + repo_dir
+        file_contents = cov_total_file.readlines()
     os.remove(cov_total)
     with open(cov_total, 'w+') as file:
         for Line in file_contents:
@@ -119,25 +114,26 @@ def printList(header, test_list, index, condition):
 
 
 def printListInformation(table_type, test_list):
-    printList("%s Executed in Build" % table_type, test_list, 0, True)
-    printList("%s Missing From Build" % table_type, test_list, 0, False)
-    printList("%s Missing ASAN" % table_type, test_list, 1, False)
-    printList("%s Missing UBSAN" % table_type, test_list, 2, False)
+    printList(f"{table_type} Executed in Build", test_list, 0, True)
+    printList(f"{table_type} Missing From Build", test_list, 0, False)
+    printList(f"{table_type} Missing ASAN", test_list, 1, False)
+    printList(f"{table_type} Missing UBSAN", test_list, 2, False)
 
 
 def getSkippedTests(repo_dir):
     skipped_test_file = os.path.join(repo_dir, "test", "common", "skipped_tests.txt")
     if not os.path.exists(skipped_test_file):
         return []
-    else:
-        with open(skipped_test_file, "r") as skipped_test_data:
-            return [x.strip() for x in skipped_test_data.readlines() if "#" not in x and x.strip() != '']
+    with open(skipped_test_file, "r") as skipped_test_data:
+        return [x.strip() for x in skipped_test_data.readlines() if "#" not in x and x.strip() != '']
 
 
 def confirmPerPatchTests(test_list, skiplist):
-    missing_tests = [x for x in sorted(test_list) if test_list[x][0] is False
-                     and x not in skiplist]
-    if len(missing_tests) > 0:
+    if missing_tests := [
+        x
+        for x in sorted(test_list)
+        if test_list[x][0] is False and x not in skiplist
+    ]:
         print("Not all tests were run. Failing the build.")
         print(missing_tests)
         exit(1)

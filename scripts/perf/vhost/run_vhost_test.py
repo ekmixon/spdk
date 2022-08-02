@@ -32,7 +32,7 @@ def gen_cpu_mask_config(output_dir, spdk_cpu_list, vm_count, vm_cpu_num):
 
 
 def gen_spdk_cpu_mask_config(spdk_cpu_list):
-    cpus = "vhost_0_reactor_mask=[%s]" % (spdk_cpu_list)
+    cpus = f"vhost_0_reactor_mask=[{spdk_cpu_list}]"
 
     # Go through assigned CPUs and use the lowest CPU index as
     # default primary core
@@ -40,20 +40,20 @@ def gen_spdk_cpu_mask_config(spdk_cpu_list):
     cpu_indexes.sort()
     print(cpu_indexes)
 
-    pr_core = "vhost_0_main_core=%s" % (cpu_indexes[0])
+    pr_core = f"vhost_0_main_core={cpu_indexes[0]}"
     return "\n".join([cpus, pr_core, "\n"])
 
 
 def get_host_cpus():
     cpu_num = multiprocessing.cpu_count()
-    cpu_list = list(range(0, cpu_num))
+    cpu_list = list(range(cpu_num))
     output = check_output("lscpu | grep 'per core'", shell=True)
 
     # Assuming 2-socket server
     if "2" in str(output):
         ht_enabled = True
         cpu_chunk = int(cpu_num/4)
-        numa0_cpus = cpu_list[0:cpu_chunk]
+        numa0_cpus = cpu_list[:cpu_chunk]
         numa0_cpus.extend(cpu_list[2*cpu_chunk:3*cpu_chunk])
         numa1_cpus = cpu_list[cpu_chunk:2*cpu_chunk]
         numa1_cpus.extend(cpu_list[3*cpu_chunk:4*cpu_chunk])
@@ -83,15 +83,15 @@ def gen_qemu_cpu_mask_config(spdk_cpu_list, vm_count, vm_cpu_num):
     # Assuming 2 socket server.
     used_numa = 0
     available = numa0_cpus
-    for i in range(0, vm_count):
-        cpus = [str(x) for x in available[0:vm_cpu_num]]
+    for i in range(vm_count):
+        cpus = [str(x) for x in available[:vm_cpu_num]]
 
         # If there is not enough cores on first numa node for a VM
         # then switch to next numa node
         if len(cpus) < vm_cpu_num and used_numa == 0:
             available = numa1_cpus
             used_numa = 1
-            cpus = [str(x) for x in available[0:vm_cpu_num]]
+            cpus = [str(x) for x in available[:vm_cpu_num]]
 
         # If not enough cores on second numa node - break and exit
         if len(cpus) < vm_cpu_num and used_numa == 1:
@@ -100,7 +100,7 @@ def gen_qemu_cpu_mask_config(spdk_cpu_list, vm_count, vm_cpu_num):
             break
 
         cpus = ",".join(cpus)
-        cpus = "VM_%s_qemu_mask=%s" % (i, cpus)
+        cpus = f"VM_{i}_qemu_mask={cpus}"
         numa = "VM_%s_qemu_numa_node=%s\n" % (i, used_numa)
 
         # Remove used CPU cores from available list
@@ -184,27 +184,25 @@ args = parser.parse_args()
 fio_cfg_path = create_fio_cfg(script_dir, script_dir, **vars(args))
 
 cpu_cfg_arg = ""
-disk_arg = ""
-split_arg = ""
 if "spdk_cpu_list" in args:
     cfg_path = gen_cpu_mask_config(script_dir, args.spdk_cpu_list, args.vm_count, args.vm_cpu_num)
-    cpu_cfg_arg = "--custom-cpu-cfg=%s" % cfg_path
+    cpu_cfg_arg = f"--custom-cpu-cfg={cfg_path}"
 if "custom_mask_file" in args:
-    cpu_cfg_arg = "--custom-cpu-cfg=%s" % args.custom_mask_file
-if args.split is True:
-    split_arg = "--use-split"
-if args.max_disks > 0:
-    disk_arg = "--max-disks=%s" % args.max_disks
-
-
-command = " ".join(["test/vhost/perf_bench/vhost_perf.sh",
-                    "--vm-image=%s" % args.vm_image,
-                    "--vm-count=%s" % args.vm_count,
-                    "--ctrl-type=%s" % args.ctrl_type,
-                    "%s" % split_arg,
-                    "%s" % disk_arg,
-                    "--fio-job=%s" % fio_cfg_path,
-                    "%s" % cpu_cfg_arg])
+    cpu_cfg_arg = f"--custom-cpu-cfg={args.custom_mask_file}"
+split_arg = "--use-split" if args.split is True else ""
+disk_arg = f"--max-disks={args.max_disks}" if args.max_disks > 0 else ""
+command = " ".join(
+    [
+        "test/vhost/perf_bench/vhost_perf.sh",
+        f"--vm-image={args.vm_image}",
+        f"--vm-count={args.vm_count}",
+        f"--ctrl-type={args.ctrl_type}",
+        f"{split_arg}",
+        f"{disk_arg}",
+        f"--fio-job={fio_cfg_path}",
+        f"{cpu_cfg_arg}",
+    ]
+)
 # TODO: Disabled for now.
 # Reason: initially this script was supposed to be a wrapper for .sh script and would
 # - generate FIO config

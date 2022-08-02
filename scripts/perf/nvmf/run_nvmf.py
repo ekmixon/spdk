@@ -58,7 +58,7 @@ class Server:
             sys.exit(1)
 
     def log_print(self, msg):
-        print("[%s] %s" % (self.name, msg), flush=True)
+        print(f"[{self.name}] {msg}", flush=True)
 
     def get_uncommented_lines(self, lines):
         return [line for line in lines if line and not line.startswith('#')]
@@ -113,10 +113,10 @@ class Server:
         for module in adq_module_deps:
             try:
                 self.exec_cmd(["sudo", "modprobe", module])
-                self.log_print("%s loaded!" % module)
+                self.log_print(f"{module} loaded!")
             except CalledProcessError as e:
-                self.log_print("ERROR: failed to load module %s" % module)
-                self.log_print("%s resulted in error: %s" % (e.cmd, e.output))
+                self.log_print(f"ERROR: failed to load module {module}")
+                self.log_print(f"{e.cmd} resulted in error: {e.output}")
 
     def adq_configure_tc(self):
         self.log_print("Configuring ADQ Traffic classes and filters...")
@@ -133,11 +133,29 @@ class Server:
 
         for nic_ip in self.nic_ips:
             nic_name = self.get_nic_name_by_ip(nic_ip)
-            tc_qdisc_map_cmd = ["sudo", "tc", "qdisc", "add", "dev", nic_name,
-                                "root", "mqprio", "num_tc", "2", "map", "0", "1",
-                                "queues", "%s@0" % num_queues_tc0,
-                                "%s@%s" % (num_queues_tc1, num_queues_tc0),
-                                "hw", "1", "mode", "channel"]
+            tc_qdisc_map_cmd = [
+                "sudo",
+                "tc",
+                "qdisc",
+                "add",
+                "dev",
+                nic_name,
+                "root",
+                "mqprio",
+                "num_tc",
+                "2",
+                "map",
+                "0",
+                "1",
+                "queues",
+                f"{num_queues_tc0}@0",
+                f"{num_queues_tc1}@{num_queues_tc0}",
+                "hw",
+                "1",
+                "mode",
+                "channel",
+            ]
+
             self.log_print(" ".join(tc_qdisc_map_cmd))
             self.exec_cmd(tc_qdisc_map_cmd)
 
@@ -146,25 +164,45 @@ class Server:
             self.log_print(" ".join(tc_qdisc_ingress_cmd))
             self.exec_cmd(tc_qdisc_ingress_cmd)
 
-            tc_filter_cmd = ["sudo", "tc", "filter", "add", "dev", nic_name,
-                             "protocol", "ip", "ingress", "prio", "1", "flower",
-                             "dst_ip", "%s/32" % nic_ip, "ip_proto", "tcp", port_param, port,
-                             "skip_sw", "hw_tc", "1"]
+            tc_filter_cmd = [
+                "sudo",
+                "tc",
+                "filter",
+                "add",
+                "dev",
+                nic_name,
+                "protocol",
+                "ip",
+                "ingress",
+                "prio",
+                "1",
+                "flower",
+                "dst_ip",
+                f"{nic_ip}/32",
+                "ip_proto",
+                "tcp",
+                port_param,
+                port,
+                "skip_sw",
+                "hw_tc",
+                "1",
+            ]
+
             self.log_print(" ".join(tc_filter_cmd))
             self.exec_cmd(tc_filter_cmd)
 
             # show tc configuration
-            self.log_print("Show tc configuration for %s NIC..." % nic_name)
+            self.log_print(f"Show tc configuration for {nic_name} NIC...")
             tc_disk_out = self.exec_cmd(["sudo", "tc", "qdisc", "show", "dev", nic_name])
             tc_filter_out = self.exec_cmd(["sudo", "tc", "filter", "show", "dev", nic_name, "ingress"])
-            self.log_print("%s" % tc_disk_out)
-            self.log_print("%s" % tc_filter_out)
+            self.log_print(f"{tc_disk_out}")
+            self.log_print(f"{tc_filter_out}")
 
             # Ethtool coalesce settings must be applied after configuring traffic classes
             self.exec_cmd(["sudo", "ethtool", "--coalesce", nic_name, "adaptive-rx", "off", "rx-usecs", "0"])
             self.exec_cmd(["sudo", "ethtool", "--coalesce", nic_name, "adaptive-tx", "off", "tx-usecs", "500"])
 
-            self.log_print("Running set_xps_rxqs script for %s NIC..." % nic_name)
+            self.log_print(f"Running set_xps_rxqs script for {nic_name} NIC...")
             xps_cmd = ["sudo", xps_script_path, nic_name]
             self.log_print(xps_cmd)
             self.exec_cmd(xps_cmd)
@@ -178,7 +216,7 @@ class Server:
             self.exec_cmd(["sudo", "modprobe", "ice"])
         except CalledProcessError as e:
             self.log_print("ERROR: failed to reload ice module!")
-            self.log_print("%s resulted in error: %s" % (e.cmd, e.output))
+            self.log_print(f"{e.cmd} resulted in error: {e.output}")
 
         nic_names = [self.get_nic_name_by_ip(n) for n in self.nic_ips]
         for nic in nic_names:
@@ -195,7 +233,7 @@ class Server:
                                "channel-pkt-inspect-optimize", "on"])
             except CalledProcessError as e:
                 self.log_print("ERROR: failed to configure NIC port using ethtool!")
-                self.log_print("%s resulted in error: %s" % (e.cmd, e.output))
+                self.log_print(f"{e.cmd} resulted in error: {e.output}")
                 self.log_print("Please update your NIC driver and firmware versions and try again.")
             self.log_print(self.exec_cmd(["sudo", "ethtool", "-k", nic]))
             self.log_print(self.exec_cmd(["sudo", "ethtool", "--show-priv-flags", nic]))
@@ -215,26 +253,26 @@ class Server:
 
         for service in svc_target_state:
             out = self.exec_cmd(["sudo", "systemctl", "show", "--no-page", service])
-            out = "\n".join(["[%s]" % service, out])
+            out = "\n".join([f"[{service}]", out])
             svc_config.read_string(out)
 
             if "LoadError" in svc_config[service] and "not found" in svc_config[service]["LoadError"]:
                 continue
 
             service_state = svc_config[service]["ActiveState"]
-            self.log_print("Current state of %s service is %s" % (service, service_state))
+            self.log_print(f"Current state of {service} service is {service_state}")
             self.svc_restore_dict.update({service: service_state})
             if service_state != "inactive":
-                self.log_print("Disabling %s. It will be restored after the test has finished." % service)
+                self.log_print(
+                    f"Disabling {service}. It will be restored after the test has finished."
+                )
+
                 self.exec_cmd(["sudo", "systemctl", "stop", service])
 
     def configure_sysctl(self):
         self.log_print("Tuning sysctl settings...")
 
-        busy_read = 0
-        if self.enable_adq and self.mode == "spdk":
-            busy_read = 1
-
+        busy_read = 1 if self.enable_adq and self.mode == "spdk" else 0
         sysctl_opts = {
             "net.core.busy_poll": 0,
             "net.core.busy_read": busy_read,
@@ -252,19 +290,21 @@ class Server:
 
         for opt, value in sysctl_opts.items():
             self.sysctl_restore_dict.update({opt: self.exec_cmd(["sysctl", "-n", opt]).strip()})
-            self.log_print(self.exec_cmd(["sudo", "sysctl", "-w", "%s=%s" % (opt, value)]).strip())
+            self.log_print(
+                self.exec_cmd(["sudo", "sysctl", "-w", f"{opt}={value}"]).strip()
+            )
 
     def configure_tuned(self):
         if not self.tuned_profile:
             self.log_print("WARNING: Tuned profile not set in configuration file. Skipping configuration.")
             return
 
-        self.log_print("Configuring tuned-adm profile to %s." % self.tuned_profile)
+        self.log_print(f"Configuring tuned-adm profile to {self.tuned_profile}.")
         service = "tuned"
         tuned_config = configparser.ConfigParser(strict=False)
 
         out = self.exec_cmd(["sudo", "systemctl", "show", "--no-page", service])
-        out = "\n".join(["[%s]" % service, out])
+        out = "\n".join([f"[{service}]", out])
         tuned_config.read_string(out)
         tuned_state = tuned_config[service]["ActiveState"]
         self.svc_restore_dict.update({service: tuned_state})
@@ -280,7 +320,9 @@ class Server:
 
         self.exec_cmd(["sudo", "systemctl", "start", service])
         self.exec_cmd(["sudo", "tuned-adm", "profile", self.tuned_profile])
-        self.log_print("Tuned profile set to %s." % self.exec_cmd(["cat", "/etc/tuned/active_profile"]))
+        self.log_print(
+            f'Tuned profile set to {self.exec_cmd(["cat", "/etc/tuned/active_profile"])}.'
+        )
 
     def configure_cpu_governor(self):
         self.log_print("Setting CPU governor to performance...")
@@ -308,7 +350,9 @@ class Server:
     def restore_sysctl(self):
         self.log_print("Restoring sysctl settings...")
         for opt, value in self.sysctl_restore_dict.items():
-            self.log_print(self.exec_cmd(["sudo", "sysctl", "-w", "%s=%s" % (opt, value)]).strip())
+            self.log_print(
+                self.exec_cmd(["sudo", "sysctl", "-w", f"{opt}={value}"]).strip()
+            )
 
     def restore_tuned(self):
         self.log_print("Restoring tuned-adm settings...")
@@ -321,13 +365,15 @@ class Server:
             self.log_print("Reverted tuned-adm to auto_profile.")
         else:
             self.exec_cmd(["sudo", "tuned-adm", "profile", self.tuned_restore_dict["profile"]])
-            self.log_print("Reverted tuned-adm to %s profile." % self.tuned_restore_dict["profile"])
+            self.log_print(
+                f'Reverted tuned-adm to {self.tuned_restore_dict["profile"]} profile.'
+            )
 
     def restore_governor(self):
         self.log_print("Restoring CPU governor setting...")
         if self.governor_restore:
             self.exec_cmd(["sudo", "cpupower", "frequency-set", "-g", self.governor_restore])
-            self.log_print("Reverted CPU governor to %s." % self.governor_restore)
+            self.log_print(f"Reverted CPU governor to {self.governor_restore}.")
 
 
 class Target(Server):
@@ -388,19 +434,17 @@ class Target(Server):
         return json.loads(self.exec_cmd(["lshw", "-json"]))
 
     def exec_cmd(self, cmd, stderr_redirect=False, change_dir=None):
-        stderr_opt = None
-        if stderr_redirect:
-            stderr_opt = subprocess.STDOUT
+        stderr_opt = subprocess.STDOUT if stderr_redirect else None
         if change_dir:
             old_cwd = os.getcwd()
             os.chdir(change_dir)
-            self.log_print("Changing directory to %s" % change_dir)
+            self.log_print(f"Changing directory to {change_dir}")
 
         out = check_output(cmd, stderr=stderr_opt).decode(encoding="utf-8")
 
         if change_dir:
             os.chdir(old_cwd)
-            self.log_print("Changing directory to %s" % old_cwd)
+            self.log_print(f"Changing directory to {old_cwd}")
         return out
 
     def zip_spdk_sources(self, spdk_dir, dest_file):
@@ -502,7 +546,7 @@ class Target(Server):
         rows = set()
 
         for fio_config in fio_files:
-            self.log_print("Getting FIO stats for %s" % fio_config)
+            self.log_print(f"Getting FIO stats for {fio_config}")
             job_name, _ = os.path.splitext(fio_config)
 
             # Look in the filename for rwmixread value. Function arguments do
@@ -514,7 +558,7 @@ class Target(Server):
             elif "write" in job_name:
                 rw_mixread = 0
             else:
-                rw_mixread = float(re.search(r"m_(\d+)", job_name).group(1)) / 100
+                rw_mixread = float(re.search(r"m_(\d+)", job_name)[1]) / 100
 
             # If "_CPU" exists in name - ignore it
             # Initiators for the same job could have different num_cores parameter
@@ -526,7 +570,7 @@ class Target(Server):
 
             # There may have been more than 1 initiator used in test, need to check that
             # Result files are created so that string after last "_" separator is server name
-            inits_names = set([os.path.splitext(x)[0].split("_")[-1] for x in job_result_files])
+            inits_names = {os.path.splitext(x)[0].split("_")[-1] for x in job_result_files}
             inits_avg_results = []
             for i in inits_names:
                 self.log_print("\tGetting stats for initiator %s" % i)
@@ -578,14 +622,19 @@ class Target(Server):
         for row in rows:
             with open(os.path.join(results_dir, csv_file), "a") as fh:
                 fh.write(row + "\n")
-        self.log_print("You can find the test results in the file %s" % os.path.join(results_dir, csv_file))
+        self.log_print(
+            f"You can find the test results in the file {os.path.join(results_dir, csv_file)}"
+        )
 
     def measure_sar(self, results_dir, sar_file_name):
         self.log_print("Waiting %d delay before measuring SAR stats" % self.sar_delay)
         cpu_number = os.cpu_count()
         sar_idle_sum = 0
         time.sleep(self.sar_delay)
-        out = self.exec_cmd(["sar", "-P", "ALL", "%s" % self.sar_interval, "%s" % self.sar_count])
+        out = self.exec_cmd(
+            ["sar", "-P", "ALL", f"{self.sar_interval}", f"{self.sar_count}"]
+        )
+
         with open(os.path.join(results_dir, sar_file_name), "w") as fh:
             for line in out.split("\n"):
                 if "Average" in line:
@@ -599,7 +648,7 @@ class Target(Server):
             fh.write(out)
         sar_cpu_usage = cpu_number * 100 - sar_idle_sum
         with open(os.path.join(results_dir, sar_file_name), "a") as f:
-            f.write("Total CPU used: " + str(sar_cpu_usage))
+            f.write(f"Total CPU used: {str(sar_cpu_usage)}")
 
     def ethtool_after_fio_ramp(self, fio_ramp_time):
         time.sleep(fio_ramp_time//2)
@@ -611,14 +660,25 @@ class Target(Server):
 
     def measure_pcm_memory(self, results_dir, pcm_file_name):
         time.sleep(self.pcm_delay)
-        cmd = ["%s/pcm-memory.x" % self.pcm_dir, "%s" % self.pcm_interval, "-csv=%s/%s" % (results_dir, pcm_file_name)]
+        cmd = [
+            f"{self.pcm_dir}/pcm-memory.x",
+            f"{self.pcm_interval}",
+            f"-csv={results_dir}/{pcm_file_name}",
+        ]
+
         pcm_memory = subprocess.Popen(cmd)
         time.sleep(self.pcm_count)
         pcm_memory.terminate()
 
     def measure_pcm(self, results_dir, pcm_file_name):
         time.sleep(self.pcm_delay)
-        cmd = ["%s/pcm.x" % self.pcm_dir, "%s" % self.pcm_interval, "-i=%s" % self.pcm_count, "-csv=%s/%s" % (results_dir, pcm_file_name)]
+        cmd = [
+            f"{self.pcm_dir}/pcm.x",
+            f"{self.pcm_interval}",
+            f"-i={self.pcm_count}",
+            f"-csv={results_dir}/{pcm_file_name}",
+        ]
+
         subprocess.run(cmd)
         df = pd.read_csv(os.path.join(results_dir, pcm_file_name), header=[0, 1])
         df = df.rename(columns=lambda x: re.sub(r'Unnamed:[\w\s]*$', '', x))
@@ -628,21 +688,41 @@ class Target(Server):
 
     def measure_pcm_power(self, results_dir, pcm_power_file_name):
         time.sleep(self.pcm_delay)
-        out = self.exec_cmd(["%s/pcm-power.x" % self.pcm_dir, "%s" % self.pcm_interval, "-i=%s" % self.pcm_count])
+        out = self.exec_cmd(
+            [
+                f"{self.pcm_dir}/pcm-power.x",
+                f"{self.pcm_interval}",
+                f"-i={self.pcm_count}",
+            ]
+        )
+
         with open(os.path.join(results_dir, pcm_power_file_name), "w") as fh:
             fh.write(out)
 
     def measure_network_bandwidth(self, results_dir, bandwidth_file_name):
         self.log_print("INFO: starting network bandwidth measure")
-        self.exec_cmd(["bwm-ng", "-o", "csv", "-F", "%s/%s" % (results_dir, bandwidth_file_name),
-                       "-a", "1", "-t", "1000", "-c", str(self.bandwidth_count)])
+        self.exec_cmd(
+            [
+                "bwm-ng",
+                "-o",
+                "csv",
+                "-F",
+                f"{results_dir}/{bandwidth_file_name}",
+                "-a",
+                "1",
+                "-t",
+                "1000",
+                "-c",
+                str(self.bandwidth_count),
+            ]
+        )
 
     def measure_dpdk_memory(self, results_dir):
         self.log_print("INFO: waiting to generate DPDK memory usage")
         time.sleep(self.dpdk_wait_time)
         self.log_print("INFO: generating DPDK memory usage")
         rpc.env.env_dpdk_get_mem_stats
-        os.rename("/tmp/spdk_mem_dump.txt", "%s/spdk_mem_dump.txt" % (results_dir))
+        os.rename("/tmp/spdk_mem_dump.txt", f"{results_dir}/spdk_mem_dump.txt")
 
     def sys_config(self):
         self.log_print("====Kernel release:====")
@@ -658,9 +738,9 @@ class Target(Server):
         self.log_print("====Cpu power info:====")
         self.log_print(self.exec_cmd(["cpupower", "frequency-info"]))
         self.log_print("====zcopy settings:====")
-        self.log_print("zcopy enabled: %s" % (self.enable_zcopy))
+        self.log_print(f"zcopy enabled: {self.enable_zcopy}")
         self.log_print("====Scheduler settings:====")
-        self.log_print("SPDK scheduler: %s" % (self.scheduler_name))
+        self.log_print(f"SPDK scheduler: {self.scheduler_name}")
 
 
 class Initiator(Server):

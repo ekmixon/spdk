@@ -19,13 +19,13 @@ so_far = 0
 bucket = 0
 total = 1
 
-for i in range(0, 64 - bucket_shift):
-    for j in range(0, (1 << bucket_shift)):
+for i in range(64 - bucket_shift):
+    for j in range(1 << bucket_shift):
         index = (((i << bucket_shift) + j) * 8)
         total += int.from_bytes(histogram[index:index + 8], 'little')
 
-for i in range(0, 64 - bucket_shift):
-    for j in range(0, (1 << bucket_shift)):
+for i in range(64 - bucket_shift):
+    for j in range(1 << bucket_shift):
         index = (((i << bucket_shift) + j)*8)
         count = int.from_bytes(histogram[index:index + 8], 'little')
         so_far += count

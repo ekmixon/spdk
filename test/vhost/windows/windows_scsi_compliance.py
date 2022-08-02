@@ -66,7 +66,7 @@ for log in scsi_logs:
     for m in matches_found:
         test_name = re.sub(r"\s+", "_", (m[0] + m[1]).strip())
         test_name = re.sub(r"[():]", "", test_name)
-        test_name = test_name[0:-1] if "." in test_name[-1] else test_name
+        test_name = test_name[:-1] if "." in test_name[-1] else test_name
         tc_result = m[4].upper()
 
         if "FAIL" in tc_result.upper():
@@ -91,7 +91,7 @@ for log in scsi_logs:
 # Generate HTML file with results table
 with open(os.path.join("./", "results.html"), 'a') as fh:
     html = "<html>"
-    for suite_ver in results.keys():
+    for suite_ver, value in results.items():
         html += """"<h2> WIN_SCSI_{ver} </h2>
         <table bgcolor=\"#ffffff\" border=\"1px solid black;>\"""".format(ver=suite_ver)
 
@@ -99,7 +99,7 @@ with open(os.path.join("./", "results.html"), 'a') as fh:
         html += "<tr><th>Test name</th>"
         disks_header = set()
 
-        for _ in results[suite_ver].keys():
+        for _ in value.keys():
             for disk in results[suite_ver][_].keys():
                 disks_header.add(disk)
 
@@ -115,10 +115,11 @@ with open(os.path.join("./", "results.html"), 'a') as fh:
                     result = results[suite_ver][test][disk]
 
                     html += "<td"
-                    if "PASS" in result:
-                        html += " bgcolor=\"#99ff33\">"
-                    else:
-                        html += " bgcolor=\"#ff5050\">"
+                    html += (
+                        " bgcolor=\"#99ff33\">"
+                        if "PASS" in result
+                        else " bgcolor=\"#ff5050\">"
+                    )
 
                     html += "<a href={file}>{result}</a>".format(result=result, file=os.path.join("./", disk, test))
                     html += "</td>"

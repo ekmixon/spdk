@@ -43,17 +43,25 @@ class memory:
         return size
 
     def print_summary(self):
-        print("DPDK memory size {} in {} heap(s)"
-              .format(B_to_MiB(self.size), len(self.heaps)))
-        print("{} heaps totaling size {}".format(len(self.heaps), B_to_MiB(self.get_total_heap_size())))
+        print(f"DPDK memory size {B_to_MiB(self.size)} in {len(self.heaps)} heap(s)")
+        print(
+            f"{len(self.heaps)} heaps totaling size {B_to_MiB(self.get_total_heap_size())}"
+        )
+
         for x in sorted(self.heaps, key=lambda x: x.size, reverse=True):
             x.print_summary('  ')
         print("end heaps----------")
-        print("{} mempools totaling size {}".format(len(self.mempools), B_to_MiB(self.get_total_mempool_size())))
+        print(
+            f"{len(self.mempools)} mempools totaling size {B_to_MiB(self.get_total_mempool_size())}"
+        )
+
         for x in sorted(self.mempools, key=lambda x: x.get_memzone_size_sum(), reverse=True):
             x.print_summary('  ')
         print("end mempools-------")
-        print("{} memzones totaling size {}".format(len(self.memzones), B_to_MiB(self.get_total_memzone_size())))
+        print(
+            f"{len(self.memzones)} memzones totaling size {B_to_MiB(self.get_total_memzone_size())}"
+        )
+
         for x in sorted(self.memzones, key=lambda x: x.size, reverse=True):
             x.print_summary('  ')
         print("end memzones-------")
@@ -64,7 +72,9 @@ class memory:
                 heap.print_detailed_stats()
                 break
         else:
-            print("heap id {} is invalid. please see the summary for valid heaps.\n".format(heap_id))
+            print(
+                f"heap id {heap_id} is invalid. please see the summary for valid heaps.\n"
+            )
 
     def print_mempool_summary(self, name):
         for pool in self.mempools:
@@ -72,7 +82,9 @@ class memory:
                 pool.print_detailed_stats()
                 break
         else:
-            print("mempool name {} is invalid. please see the summary for valid mempools.\n".format(name))
+            print(
+                f"mempool name {name} is invalid. please see the summary for valid mempools.\n"
+            )
 
     def print_memzone_summary(self, name):
         for zone in self.memzones:
@@ -80,7 +92,9 @@ class memory:
                 zone.print_detailed_stats("")
                 break
         else:
-            print("memzone name {} is invalid. please see the summary for valid memzone.\n".format(name))
+            print(
+                f"memzone name {name} is invalid. please see the summary for valid memzone.\n"
+            )
 
     def associate_heap_elements_and_memzones(self):
         for zone in self.memzones:
@@ -142,11 +156,14 @@ class heap:
             self.busy_malloc_elements.append(element)
 
     def print_element_stats(self, list_to_print, list_type, header):
-        print("{}list of {} elements. size: {}".format(header, list_type, B_to_MiB(self.get_element_size(list_to_print))))
+        print(
+            f"{header}list of {list_type} elements. size: {B_to_MiB(self.get_element_size(list_to_print))}"
+        )
+
         for x in sorted(list_to_print, key=lambda x: x.size, reverse=True):
-            x.print_summary("{}  ".format(header))
+            x.print_summary(f"{header}  ")
             if x.memzone is not None:
-                x.memzone.print_summary("    {}associated memzone info: ".format(header))
+                x.memzone.print_summary(f"    {header}associated memzone info: ")
 
     def get_element_size(self, list_to_check):
         size = 0
@@ -158,8 +175,10 @@ class heap:
         print("{}size: {:>15} heap id: {}".format(header, B_to_MiB(self.size), self.id))
 
     def print_detailed_stats(self):
-        print("heap id: {} total size: {} number of busy elements: {} number of free elements: {}"
-              .format(self.id, B_to_MiB(self.size), len(self.busy_malloc_elements), len(self.free_elements)))
+        print(
+            f"heap id: {self.id} total size: {B_to_MiB(self.size)} number of busy elements: {len(self.busy_malloc_elements)} number of free elements: {len(self.free_elements)}"
+        )
+
         self.print_element_stats(self.free_elements, "free", "  ")
         self.print_element_stats(self.busy_malloc_elements, "standard malloc", "  ")
         self.print_element_stats(self.busy_memzone_elements, "memzone associated", "  ")
@@ -208,8 +227,8 @@ class memzone:
 
     def print_detailed_stats(self, header):
         self.print_summary(header)
-        print("{}located at address {}".format(header, hex(self.address)))
-        print("{}spanning {} segment(s):".format(header, len(self.segments)))
+        print(f"{header}located at address {hex(self.address)}")
+        print(f"{header}spanning {len(self.segments)} segment(s):")
         for x in sorted(self.segments, key=lambda x: x.size, reverse=True):
             x.print_summary('  ')
 
@@ -345,9 +364,7 @@ def parse_mem_stats(stat_path):
                 trash, heap_size = line.split(':')
                 line = stats.readline()
                 trash, num_allocations = line.split(':')
-                if int(heap_size, 0) == 0:
-                    pass
-                else:
+                if int(heap_size, 0) != 0:
                     new_heap = heap(heap_id.lstrip(), int(heap_size, 0), int(num_allocations, 0))
                     memory_struct.add_heap(new_heap)
                     state = parse_state.PARSE_HEAP_ELEMENTS

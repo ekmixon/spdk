@@ -40,11 +40,11 @@ class UINode(ConfigNode):
         except Exception as e:
             raise e
         else:
-            self.shell.log.debug("Command %s succeeded." % command)
+            self.shell.log.debug(f"Command {command} succeeded.")
             return result
         finally:
             if self.shell.interactive and\
-                command in ["create", "delete", "delete_all", "add_initiator",
+                    command in ["create", "delete", "delete_all", "add_initiator",
                             "allow_any_host", "bdev_split_create", "add_lun",
                             "iscsi_target_node_add_pg_ig_maps", "remove_target", "add_secret",
                             "bdev_split_delete", "bdev_pmem_delete_pool",
@@ -129,7 +129,7 @@ class UILvolStores(UINode):
             raise JSONRPCException(rpc_messages)
 
     def summary(self):
-        return "Lvol stores: %s" % len(self.children), None
+        return f"Lvol stores: {len(self.children)}", None
 
 
 class UIBdev(UINode):
@@ -594,14 +594,8 @@ class UIBdevObj(UINode):
         size = convert_bytes_to_human(self.bdev.block_size * self.bdev.num_blocks)
         size = "=".join(["Size", size])
 
-        in_use = "Not claimed"
-        if bool(self.bdev.claimed):
-            in_use = "Claimed"
-
-        alias = None
-        if self.bdev.aliases:
-            alias = self.bdev.aliases[0]
-
+        in_use = "Claimed" if bool(self.bdev.claimed) else "Not claimed"
+        alias = self.bdev.aliases[0] if self.bdev.aliases else None
         info = ", ".join([_f for _f in [alias, size, in_use] if _f])
         return info, True
 
@@ -640,7 +634,7 @@ class UILvsObj(UINode):
             free = "0"
         size = "=".join(["Size", size])
         free = "=".join(["Free", free])
-        info = ", ".join([str(size), str(free)])
+        info = ", ".join([size, free])
         return info, True
 
 
@@ -788,9 +782,7 @@ class UIVhostBlkCtrlObj(UIVhostCtrl):
         UIVhostLunDevObj(self.ctrlr.backend_specific["block"]["bdev"], self)
 
     def summary(self):
-        ro = None
-        if self.ctrlr.backend_specific["block"]["readonly"]:
-            ro = "Readonly"
+        ro = "Readonly" if self.ctrlr.backend_specific["block"]["readonly"] else None
         info = ", ".join([_f for _f in [self.ctrlr.socket, ro] if _f])
         return info, True
 
@@ -811,8 +803,8 @@ class UIVhostTargetObj(UINode):
         self.shell.log.info(json.dumps(self.target, indent=2))
 
     def summary(self):
-        luns = "LUNs: %s" % len(self.target["luns"])
-        id = "TargetID: %s" % self.target["scsi_dev_num"]
+        luns = f'LUNs: {len(self.target["luns"])}'
+        id = f'TargetID: {self.target["scsi_dev_num"]}'
         info = ",".join([luns, id])
         return info, True
 
@@ -839,10 +831,7 @@ class UIRaidBdev(UIBdev):
         base_bdevs - base bdevs name, whitespace separated list in quotes
         strip_size_kb - strip size of raid bdev in KB, supported values like 8, 16, 32, 64, 128, 256, etc
         """
-        base_bdevs_array = []
-        for u in base_bdevs.strip().split(" "):
-            base_bdevs_array.append(u)
-
+        base_bdevs_array = list(base_bdevs.strip().split(" "))
         strip_size_kb = self.ui_eval_param(strip_size_kb, "number", None)
 
         ret_name = self.get_root().bdev_raid_create(name=name,

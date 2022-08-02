@@ -43,7 +43,10 @@ known_failed_cases = ['tc_ffp_15_2', 'tc_ffp_29_2', 'tc_ffp_29_3', 'tc_ffp_29_4'
 
 def run_case(case, result_list, log_dir_path):
     try:
-        case_log = subprocess.check_output("{}/{}".format(CALSOFT_BIN_PATH, case), stderr=subprocess.STDOUT, shell=True).decode('utf-8')
+        case_log = subprocess.check_output(
+            f"{CALSOFT_BIN_PATH}/{case}", stderr=subprocess.STDOUT, shell=True
+        ).decode('utf-8')
+
     except subprocess.CalledProcessError as e:
         result_list.append({"Name": case, "Result": "FAIL"})
         case_log = e.output.decode('utf-8')
@@ -62,9 +65,9 @@ def main():
     if len(sys.argv) > 2:
         output_file = sys.argv[2]
     else:
-        output_file = "%s/calsoft.json" % (output_dir)
+        output_file = f"{output_dir}/calsoft.json"
 
-    log_dir = "%s/calsoft/" % output_dir
+    log_dir = f"{output_dir}/calsoft/"
 
     all_cases = [x for x in os.listdir(CALSOFT_BIN_PATH) if x.startswith('tc')]
     all_cases.sort()
@@ -76,7 +79,7 @@ def main():
     if not os.path.exists(log_dir):
         os.mkdir(log_dir)
     for case in known_failed_cases:
-        print("Skipping %s. It is known to fail." % (case))
+        print(f"Skipping {case}. It is known to fail.")
         case_result_list.append({"Name": case, "Result": "SKIP"})
 
     thread_objs = []
@@ -85,10 +88,10 @@ def main():
     max_thread_count = 32
 
     while index < len(left_cases):
-        cur_thread_count = 0
-        for thread_obj in thread_objs:
-            if thread_obj.is_alive():
-                cur_thread_count += 1
+        cur_thread_count = sum(
+            bool(thread_obj.is_alive()) for thread_obj in thread_objs
+        )
+
         while cur_thread_count < max_thread_count and index < len(left_cases):
             thread_obj = threading.Thread(target=run_case, args=(left_cases[index], case_result_list, log_dir, ))
             thread_obj.start()
@@ -112,7 +115,7 @@ def main():
     failed = 0
     for x in case_result_list:
         if x["Result"] == "FAIL":
-            print("Test case %s failed." % (x["Name"]))
+            print(f'Test case {x["Name"]} failed.')
             failed = 1
     exit(failed)
 

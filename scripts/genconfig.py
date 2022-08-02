@@ -9,10 +9,9 @@ assign = re.compile(r'^\s*([a-zA-Z0-9_]+)\s*(\?)?=\s*([^#]*)')
 
 args = os.environ.copy()
 for arg in sys.argv:
-    m = assign.match(arg)
-    if m:
-        var = m.group(1).strip()
-        val = m.group(3).strip()
+    if m := assign.match(arg):
+        var = m[1].strip()
+        val = m[3].strip()
         args[var] = val
 
 defs = {}
@@ -21,18 +20,14 @@ try:
         for line in f:
             line = line.strip()
             if not comment.match(line):
-                m = assign.match(line)
-                if m:
-                    var = m.group(1).strip()
-                    default = m.group(3).strip()
+                if m := assign.match(line):
+                    var = m[1].strip()
+                    default = m[3].strip()
                     val = default
                     if var in args:
                         val = args[var]
-                    if default.lower() == 'y' or default.lower() == 'n':
-                        if val.lower() == 'y':
-                            defs["SPDK_{0}".format(var)] = 1
-                        else:
-                            defs["SPDK_{0}".format(var)] = 0
+                    if default.lower() in ['y', 'n']:
+                        defs["SPDK_{0}".format(var)] = 1 if val.lower() == 'y' else 0
                     else:
                         strval = val.replace('"', '\"')
                         defs["SPDK_{0}".format(var)] = strval

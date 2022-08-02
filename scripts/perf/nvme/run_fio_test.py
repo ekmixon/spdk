@@ -38,18 +38,48 @@ iter_num = ['1']
 
 
 def run_fio(io_size_bytes, qd, rw_mix, cpu_mask, run_num, workload, run_time_sec):
-    print("Running Test: IO Size={} QD={} Mix={} CPU Mask={}".format(io_size_bytes, qd, rw_mix, cpu_mask))
-    string = "s_" + str(io_size_bytes) + "_q_" + str(qd) + "_m_" + str(rw_mix) + "_c_" + str(cpu_mask) + "_run_" + str(run_num)
+    print(
+        f"Running Test: IO Size={io_size_bytes} QD={qd} Mix={rw_mix} CPU Mask={cpu_mask}"
+    )
+
+    string = f"s_{str(io_size_bytes)}_q_{str(qd)}_m_{str(rw_mix)}_c_{str(cpu_mask)}_run_{str(run_num)}"
+
 
     # Call fio
     path_to_fio_conf = config_file_for_test
     path_to_ioengine = sys.argv[2]
-    command = "BLK_SIZE=" + str(io_size_bytes) + " RW=" + str(workload) + " MIX=" + str(rw_mix) \
-        + " IODEPTH=" + str(qd) + " RUNTIME=" + str(run_time_sec) + " IOENGINE=" + path_to_ioengine \
-        + " fio " + str(path_to_fio_conf) + " -output=" + string + " -output-format=json"
+    command = (
+        (
+            (
+                (
+                    (
+                        (
+                            (
+                                f"BLK_SIZE={str(io_size_bytes)} RW={str(workload)} MIX={str(rw_mix)}"
+                                + " IODEPTH="
+                            )
+                            + str(qd)
+                            + " RUNTIME="
+                        )
+                        + str(run_time_sec)
+                        + " IOENGINE="
+                    )
+                    + path_to_ioengine
+                )
+                + " fio "
+            )
+            + str(path_to_fio_conf)
+            + " -output="
+        )
+        + string
+    ) + " -output-format=json"
+
     output = subprocess.check_output(command, shell=True)
 
-    print("Finished Test: IO Size={} QD={} Mix={} CPU Mask={}".format(io_size_bytes, qd, rw_mix, cpu_mask))
+    print(
+        f"Finished Test: IO Size={io_size_bytes} QD={qd} Mix={rw_mix} CPU Mask={cpu_mask}"
+    )
+
     return
 
 
@@ -60,11 +90,26 @@ def parse_results(io_size_bytes, qd, rw_mix, cpu_mask, run_num, workload, run_ti
     job_pos = 0
 
     # generate the next result line that will be added to the output csv file
-    results = str(io_size_bytes) + "," + str(qd) + "," + str(rw_mix) + "," \
-        + str(workload) + "," + str(cpu_mask) + "," + str(run_time_sec) + "," + str(run_num)
+    results = (
+        (
+            (
+                (
+                    f"{str(io_size_bytes)},{str(qd)},{str(rw_mix)},"
+                    + str(workload)
+                )
+                + ","
+            )
+            + str(cpu_mask)
+            + ","
+        )
+        + str(run_time_sec)
+        + ","
+    ) + str(run_num)
+
 
     # Read the results of this run from the test result file
-    string = "s_" + str(io_size_bytes) + "_q_" + str(qd) + "_m_" + str(rw_mix) + "_c_" + str(cpu_mask) + "_run_" + str(run_num)
+    string = f"s_{str(io_size_bytes)}_q_{str(qd)}_m_{str(rw_mix)}_c_{str(cpu_mask)}_run_{str(run_num)}"
+
     with open(string) as json_file:
         data = json.load(json_file)
         job_name = data['jobs'][job_pos]['jobname']
@@ -100,10 +145,38 @@ def parse_results(io_size_bytes, qd, rw_mix, cpu_mask, run_num, workload, run_ti
               "%-15s" % read_avg_lat, "%-15s" % read_min_lat, "%-15s" % read_max_lat,
               "%-15s" % write_iops, "%-10s" % write_bw, "%-15s" % write_avg_lat,
               "%-15s" % write_min_lat, "%-15s" % write_max_lat)
-        results = results + "," + str(read_iops) + "," + str(read_bw) + "," \
-            + str(read_avg_lat) + "," + str(read_min_lat) + "," + str(read_max_lat) \
-            + "," + str(write_iops) + "," + str(write_bw) + "," + str(write_avg_lat) \
-            + "," + str(write_min_lat) + "," + str(write_max_lat)
+        results = (
+            (
+                (
+                    (
+                        (
+                            (
+                                (
+                                    (
+                                        f"{results},{read_iops},{read_bw},"
+                                        + str(read_avg_lat)
+                                    )
+                                    + ","
+                                )
+                                + str(read_min_lat)
+                                + ","
+                            )
+                            + str(read_max_lat)
+                            + ","
+                        )
+                        + str(write_iops)
+                        + ","
+                    )
+                    + str(write_bw)
+                    + ","
+                )
+                + str(write_avg_lat)
+                + ","
+            )
+            + str(write_min_lat)
+            + ","
+        ) + str(write_max_lat)
+
         with open(result_file_name, "a") as result_file:
             result_file.write(results + "\n")
         results_array = []
@@ -133,22 +206,22 @@ if len(sys.argv) != 4:
 
 num_ssds = int(sys.argv[3])
 if num_ssds > get_nvme_devices_count():
-    print("System does not have {} NVMe SSDs.".format(num_ssds))
+    print(f"System does not have {num_ssds} NVMe SSDs.")
     sys.exit()
 
 host_name = os.uname()[1]
-result_file_name = host_name + "_" + sys.argv[3] + "ssds_perf_output.csv"
+result_file_name = f"{host_name}_{sys.argv[3]}ssds_perf_output.csv"
 
 bdf = get_nvme_devices_bdf()
-config_file_for_test = sys.argv[1] + "_" + sys.argv[3] + "ssds"
+config_file_for_test = f"{sys.argv[1]}_{sys.argv[3]}ssds"
 copyfile(sys.argv[1], config_file_for_test)
 
 # Add the number of threads to the fio config file
 with open(config_file_for_test, "a") as conf_file:
-    conf_file.write("numjobs=" + str(1) + "\n")
+    conf_file.write('numjobs=1' + "\n")
 
 # Add the NVMe bdf to the fio config file
-for i in range(0, num_ssds):
+for i in range(num_ssds):
     add_filename_to_conf(config_file_for_test, bdf[i])
 
 # Set up for output

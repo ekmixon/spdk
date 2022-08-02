@@ -97,4 +97,4 @@ sort
         o = json.loads('{ "the_object": ' + sys.stdin.read() + ' }')
         print(json.dumps(sort_json_object(o)['the_object'], indent=2))
     else:
-        raise ValueError("Invalid method '{}'\n\n{}".format(args.method, parser.format_help()))
+        raise ValueError(f"Invalid method '{args.method}'\n\n{parser.format_help()}")

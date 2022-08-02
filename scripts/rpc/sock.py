@@ -4,9 +4,7 @@ def sock_impl_get_options(client, impl_name=None):
     Args:
         impl_name: name of socket implementation, e.g. posix
     """
-    params = {}
-
-    params['impl_name'] = impl_name
+    params = {'impl_name': impl_name}
 
     return client.call('sock_impl_get_options', params)
 
@@ -32,9 +30,8 @@ def sock_impl_set_options(client,
         enable_zerocopy_send_server: enable or disable zerocopy on send for server sockets(optional)
         enable_zerocopy_send_client: enable or disable zerocopy on send for client sockets(optional)
     """
-    params = {}
+    params = {'impl_name': impl_name}
 
-    params['impl_name'] = impl_name
     if recv_buf_size is not None:
         params['recv_buf_size'] = recv_buf_size
     if send_buf_size is not None:
@@ -59,8 +56,6 @@ def sock_set_default_impl(client, impl_name=None):
     Args:
         impl_name: name of socket implementation, e.g. posix
     """
-    params = {}
-
-    params['impl_name'] = impl_name
+    params = {'impl_name': impl_name}
 
     return client.call('sock_set_default_impl', params)
